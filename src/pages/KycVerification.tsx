@@ -20,7 +20,7 @@ export default function KycVerification() {
     setErrorMsg('');
     
     try {
-      const response = await fetch('http://localhost:3001/api/kyc/request-otp', {
+      const response = await fetch('/api/kyc/request-otp', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -46,7 +46,7 @@ export default function KycVerification() {
     setErrorMsg('');
     
     try {
-      const response = await fetch('http://localhost:3001/api/kyc/verify-otp', {
+      const response = await fetch('/api/kyc/verify-otp', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
