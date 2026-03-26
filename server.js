@@ -147,8 +147,9 @@ app.post('/api/chat', async (req, res) => {
 // Serve static files from the Vite build directory
 app.use(express.static(path.join(__dirname, 'dist')));
 
-// Wildcard route to serve index.html for SPA routing (Express 5 compatible)
-app.get('/:any*', (req, res) => {
+// Fallback route to serve index.html for SPA routing
+// Using app.use() at the end avoids path-to-regexp compatibility issues in Express 5
+app.use((req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
