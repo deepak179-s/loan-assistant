@@ -72,7 +72,32 @@ export default function AiAgents() {
     // Call the real LLM Node backend
     try {
       const savedData = localStorage.getItem('cibilData');
-      const userData = savedData ? JSON.parse(savedData) : null;
+      
+      let parsedCibil = null;
+      if (savedData) {
+        try { parsedCibil = JSON.parse(savedData); } catch (e) {}
+      }
+      
+      if (!parsedCibil) {
+        parsedCibil = {
+          cibil_score: 784,
+          risk_band: 'Low Risk',
+          active_loans: [
+            { lender: 'SBI Education Loan', outstanding_balance: 3500000, emi: 38400, interest_rate: 8.5 },
+            { lender: 'HDFC Personal Loan', outstanding_balance: 150000, emi: 13500, interest_rate: 14.5 }
+          ],
+          credit_cards: [
+            { issuer: 'ICICI Bank Coral', limit: 200000, utilized: 45000 }
+          ]
+        };
+      }
+
+      const savedSavings = localStorage.getItem('totalSavings');
+      
+      const userData = {
+        creditProfile: parsedCibil,
+        totalSavingsAndInvestments: savedSavings ? parseInt(savedSavings) : 0
+      };
 
       const response = await fetch('/api/chat', {
         method: 'POST',
