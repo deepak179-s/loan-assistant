@@ -76,15 +76,21 @@ app.post('/api/kyc/verify-otp', authenticateApiKey, (req, res) => {
       active_loans: [
         {
           lender: 'SBI Education Loan',
+          original_principal: 3823500,
           outstanding_balance: 3250000,
           emi: 38400,
-          interest_rate: 8.5
+          interest_rate: 8.5,
+          tenure_months: 180,
+          percent_repaid: 15
         },
         {
           lender: 'HDFC Personal Loan',
+          original_principal: 763600,
           outstanding_balance: 420000,
           emi: 14500,
-          interest_rate: 11.2
+          interest_rate: 11.2,
+          tenure_months: 60,
+          percent_repaid: 45
         }
       ],
       credit_cards: [
