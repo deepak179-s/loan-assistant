@@ -10,7 +10,7 @@ export default function Simulator() {
   // Generate mock projection data based on extra payment
   const generateData = () => {
     const data = [];
-    let principal = 3500000;
+    let principal = 3250000;
     const basePayment = 38400; // Original EMI
     const totalPayment = basePayment + extraPayment;
     const interestRate = 0.085 / 12; // 8.5%
