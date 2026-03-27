@@ -83,11 +83,12 @@ export default function AiAgents() {
           cibil_score: 784,
           risk_band: 'Low Risk',
           active_loans: [
-            { lender: 'SBI Education Loan', outstanding_balance: 3500000, emi: 38400, interest_rate: 8.5 },
-            { lender: 'HDFC Personal Loan', outstanding_balance: 150000, emi: 13500, interest_rate: 14.5 }
+            { lender: 'SBI Education Loan', outstanding_balance: 3250000, emi: 38400, interest_rate: 8.5 },
+            { lender: 'HDFC Personal Loan', outstanding_balance: 420000, emi: 14500, interest_rate: 11.2 }
           ],
           credit_cards: [
-            { issuer: 'ICICI Bank Coral', limit: 200000, utilized: 45000 }
+            { issuer: 'ICICI Coral Credit Card', limit: 200000, utilized: 45200, next_bill: '12th Oct' },
+            { issuer: 'Axis Bank Flipkart Card', limit: 150000, utilized: 12400, next_bill: '18th Oct' }
           ]
         };
       }
