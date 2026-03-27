@@ -75,7 +75,13 @@ export default function AiAgents() {
       
       let parsedCibil = null;
       if (savedData) {
-        try { parsedCibil = JSON.parse(savedData); } catch (e) {}
+        try { 
+          parsedCibil = JSON.parse(savedData); 
+          // Cache bust: if old data doesn't have the Axis card, ignore it and use new fallback
+          if (parsedCibil.credit_cards && parsedCibil.credit_cards.length < 2) {
+            parsedCibil = null;
+          }
+        } catch (e) {}
       }
       
       if (!parsedCibil) {
@@ -83,14 +89,16 @@ export default function AiAgents() {
           cibil_score: 784,
           risk_band: 'Low Risk',
           active_loans: [
-            { lender: 'SBI Education Loan', outstanding_balance: 3250000, emi: 38400, interest_rate: 8.5 },
-            { lender: 'HDFC Personal Loan', outstanding_balance: 420000, emi: 14500, interest_rate: 11.2 }
+            { lender: 'SBI Education Loan', original_principal: 3823500, outstanding_balance: 3250000, emi: 38400, interest_rate: 8.5, tenure_months: 180, percent_repaid: 15 },
+            { lender: 'HDFC Personal Loan', original_principal: 763600, outstanding_balance: 420000, emi: 14500, interest_rate: 11.2, tenure_months: 60, percent_repaid: 45 }
           ],
           credit_cards: [
             { issuer: 'ICICI Coral Credit Card', limit: 200000, utilized: 45200, next_bill: '12th Oct' },
             { issuer: 'Axis Bank Flipkart Card', limit: 150000, utilized: 12400, next_bill: '18th Oct' }
           ]
         };
+        // Save the updated complete profile back to storage so it persists
+        localStorage.setItem('cibilData', JSON.stringify(parsedCibil));
       }
 
       const savedSavings = localStorage.getItem('totalSavings');
