@@ -47,9 +47,9 @@ export default function HumanCallback() {
             </div>
           </div>
 
-          <button className="btn btn-primary" style={{ padding: '16px 40px', fontSize: '1.2rem', borderRadius: '12px', boxShadow: '0 8px 32px rgba(122, 162, 247, 0.3)' }}>
+          <a href="/payment" className="btn btn-primary" style={{ display: 'inline-block', padding: '16px 40px', fontSize: '1.2rem', borderRadius: '12px', boxShadow: '0 8px 32px rgba(122, 162, 247, 0.3)', textDecoration: 'none' }}>
             Book Now
-          </button>
+          </a>
           
           <p style={{ marginTop: '24px', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
             Cancel anytime. 100% Secure Payment powered by Razorpay.
