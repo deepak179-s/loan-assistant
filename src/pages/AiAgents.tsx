@@ -153,9 +153,9 @@ export default function AiAgents() {
     : messages;
 
   return (
-    <div style={{ height: 'calc(100vh - 150px)', display: 'flex', gap: '24px' }}>
-      {/* Sidebar: Chat Histories */}
-      <div className="glass-panel" style={{ width: '300px', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+    <div className="animate-fade-in flex-chat" style={{ padding: '0 24px 24px' }}>
+      {/* Sidebar: Chat History */}
+      <div className="glass-panel chat-sidebar">
         <div style={{ padding: '24px', borderBottom: '1px solid var(--glass-border)' }}>
           <h3 style={{ fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Clock size={20} color="var(--accent-primary)" />
@@ -203,8 +203,8 @@ export default function AiAgents() {
         </div>
       </div>
       
-      {/* Chat Area */}
-      <div className="glass-panel" style={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative' }}>
+      {/* Main Chat Area */}
+      <div className="glass-panel chat-main">
         <div style={{ padding: '24px', borderBottom: '1px solid var(--glass-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <h3 style={{ fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '12px' }}>

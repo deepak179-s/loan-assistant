@@ -11,7 +11,7 @@ export default function RestructuringTracker() {
         Track Central Scheme of Interest Subsidy (CSIS) eligibility, EMI moratorium periods, and refinancing opportunities.
       </p>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(300px, 2fr) 1fr', gap: '24px' }}>
+      <div className="grid-2">
         
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           {/* CSIS Tracker */}

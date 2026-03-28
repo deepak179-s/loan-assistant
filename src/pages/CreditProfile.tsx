@@ -65,7 +65,7 @@ export default function CreditProfile() {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+      <div className="grid-2">
         
         {/* Active Loans */}
         <div className="glass-panel" style={{ padding: '24px' }}>

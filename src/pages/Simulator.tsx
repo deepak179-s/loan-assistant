@@ -62,9 +62,10 @@ export default function Simulator() {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: showXai ? '2fr 1fr' : '1fr', gap: '24px', transition: 'all 0.3s' }}>
+      {/* Comparison Grid */}
+      <div className={showXai ? "grid-2" : ""} style={{ display: showXai ? undefined : 'block', transition: 'all 0.3s' }}>
         
-        {/* Simulator Core */}
+        {/* Main Controls */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           
           <div className="glass-panel" style={{ padding: '24px' }}>

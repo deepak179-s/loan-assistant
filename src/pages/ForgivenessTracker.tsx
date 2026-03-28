@@ -11,7 +11,8 @@ export default function ForgivenessTracker() {
         Automated tracking for Public Service Loan Forgiveness compliance and eligible payment counts.
       </p>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(300px, 2fr) 1fr', gap: '24px' }}>
+      {/* Main Layout Grid */}
+      <div className="grid-2">
         
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           {/* PSLF Progress Main Card */}
