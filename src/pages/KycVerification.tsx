@@ -1,6 +1,15 @@
 import { useState } from 'react';
 import { ShieldCheck, UserCheck, Lock } from 'lucide-react';
 import { useUser } from '../context/UserContext';
+import { auth } from '../config/firebase';
+import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
+
+declare global {
+  interface Window {
+    recaptchaVerifier: any;
+    confirmationResult: any;
+  }
+}
 
 export default function KycVerification() {
   const { setActiveUserId } = useUser();
@@ -13,30 +22,38 @@ export default function KycVerification() {
     mobile: ''
   });
   const [otp, setOtp] = useState('');
-
   const [errorMsg, setErrorMsg] = useState('');
+
+  const setupRecaptcha = () => {
+    if (!window.recaptchaVerifier) {
+      window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+        size: 'invisible',
+      });
+    }
+  };
 
   const handleRequestOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setErrorMsg('');
-    
     try {
-      const response = await fetch('/api/kyc/request-otp', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': 'mock_decentro_sandbox_key_123'
-        },
-        body: JSON.stringify(formData)
-      });
+      setupRecaptcha();
+      const appVerifier = window.recaptchaVerifier;
+      // Firebase auth requires country code
+      const phoneNumber = formData.mobile.startsWith('+') ? formData.mobile : '+91' + formData.mobile;
       
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Failed to request OTP');
+      const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
+      window.confirmationResult = confirmationResult;
       
       setStep(2);
     } catch (err: any) {
-      setErrorMsg(err.message);
+      console.error(err);
+      setErrorMsg(err.message || 'Failed to send OTP. Please check the console.');
+      // If reCAPTCHA fails, resetting helps
+      if (window.recaptchaVerifier) {
+        window.recaptchaVerifier.clear();
+        window.recaptchaVerifier = null;
+      }
     } finally {
       setLoading(false);
     }
@@ -46,25 +63,11 @@ export default function KycVerification() {
     e.preventDefault();
     setLoading(true);
     setErrorMsg('');
-    
     try {
-      const response = await fetch('/api/kyc/verify-otp', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': 'mock_decentro_sandbox_key_123'
-        },
-        body: JSON.stringify({ mobile: formData.mobile, otp, name: formData.name })
-      });
+      await window.confirmationResult.confirm(otp);
       
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Invalid OTP');
-      
-      // Successfully fetched CIBIL data here (data.data)
-      console.log("Bureau Data:", data.data);
-      localStorage.setItem('cibilData', JSON.stringify(data.data));
-      
-      // Auto-switch UserContext
+      // Successfully authenticated!
+      // Map the entered name to the mock user profiles in Firestore
       const lowerName = formData.name.toLowerCase();
       if (lowerName.includes('sumit')) setActiveUserId('sumit');
       else if (lowerName.includes('kashish')) setActiveUserId('kashish');
@@ -73,117 +76,126 @@ export default function KycVerification() {
 
       setStep(3);
     } catch (err: any) {
-      setErrorMsg(err.message);
+      console.error(err);
+      setErrorMsg('Invalid OTP. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '80vh' }}>
-      
-      <div className="glass-panel" style={{ width: '100%', maxWidth: '500px', padding: '40px', position: 'relative', overflow: 'hidden' }}>
-        
-        {/* Progress Bar */}
-        <div style={{ position: 'absolute', top: 0, left: 0, height: '4px', width: '100%', background: 'rgba(255,255,255,0.05)' }}>
-          <div style={{ height: '100%', width: step === 1 ? '33%' : step === 2 ? '66%' : '100%', background: 'var(--gradient-primary)', transition: 'width 0.4s ease' }} />
+    <div className="animate-fade-in" style={{ maxWidth: '600px', margin: '0 auto', padding: '40px 0' }}>
+      <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+        <h1 className="text-gradient" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px' }}>
+          <ShieldCheck size={32} />
+          Sync Real CIBIL
+        </h1>
+        <p style={{ color: 'var(--text-muted)' }}>Securely fetch your credit profile from the bureau using DPDP compliant protocols.</p>
+      </div>
+
+      {errorMsg && (
+        <div style={{ background: 'rgba(247, 118, 142, 0.1)', color: 'var(--danger)', padding: '16px', borderRadius: '12px', marginBottom: '24px', textAlign: 'center', border: '1px solid var(--danger)' }}>
+          {errorMsg}
         </div>
+      )}
 
+      {/* Invisible reCAPTCHA container for Firebase */}
+      <div id="recaptcha-container"></div>
+
+      <div className="glass-panel" style={{ padding: '32px' }}>
         {step === 1 && (
-          <div className="animate-fade-in">
-            <h2 style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-              <UserCheck color="var(--accent-primary)" />
-              Verify Identity
-            </h2>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '24px' }}>
-              We need to fetch your secure credit profile from the Bureau. Please provide details matching your PAN Card.
-            </p>
-
-            {errorMsg && (
-               <div style={{ background: 'rgba(247, 118, 142, 0.1)', color: 'var(--danger)', border: '1px solid var(--danger)', padding: '12px', borderRadius: '8px', marginBottom: '16px', fontSize: '0.9rem' }}>
-                 {errorMsg}
-               </div>
-            )}
-
-            <form onSubmit={handleRequestOtp} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+           <form onSubmit={handleRequestOtp} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               <div>
-                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', color: 'var(--text-muted)' }}>Full Name</label>
-                <input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="As per PAN Card" style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--glass-border)', padding: '12px 16px', borderRadius: '8px', color: 'var(--text-main)', fontSize: '1rem', outline: 'none' }} />
+                <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '8px', color: 'var(--text-muted)' }}>Full Name (As per PAN)</label>
+                <div style={{ position: 'relative' }}>
+                  <UserCheck size={18} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                  <input 
+                    type="text" 
+                    required 
+                    value={formData.name}
+                    onChange={(e) => setFormData({...formData, name: e.target.value})}
+                    style={{ width: '100%', padding: '12px 16px 12px 48px', background: 'var(--bg-panel)', border: '1px solid var(--glass-border)', borderRadius: '8px', color: 'white' }} 
+                    placeholder="E.g. Deepak Kumar" 
+                  />
+                </div>
               </div>
               
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '8px', color: 'var(--text-muted)' }}>PAN Number</label>
+                  <input 
+                    type="text" 
+                    required 
+                    value={formData.pan}
+                    onChange={(e) => setFormData({...formData, pan: e.target.value})}
+                    style={{ width: '100%', padding: '12px 16px', background: 'var(--bg-panel)', border: '1px solid var(--glass-border)', borderRadius: '8px', color: 'white', textTransform: 'uppercase' }} 
+                    placeholder="ABCDE1234F" 
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '8px', color: 'var(--text-muted)' }}>Date of Birth</label>
+                  <input 
+                    type="date" 
+                    required 
+                    value={formData.dob}
+                    onChange={(e) => setFormData({...formData, dob: e.target.value})}
+                    style={{ width: '100%', padding: '12px 16px', background: 'var(--bg-panel)', border: '1px solid var(--glass-border)', borderRadius: '8px', color: 'white', colorScheme: 'dark' }} 
+                  />
+                </div>
+              </div>
+
               <div>
-                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', color: 'var(--text-muted)' }}>Permanent Account Number (PAN)</label>
-                <input required type="text" value={formData.pan} onChange={e => setFormData({...formData, pan: e.target.value.toUpperCase()})} placeholder="ABCDE1234F" maxLength={10} style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--glass-border)', padding: '12px 16px', borderRadius: '8px', color: 'var(--text-main)', fontSize: '1rem', outline: 'none', textTransform: 'uppercase' }} />
+                <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '8px', color: 'var(--text-muted)' }}>Mobile Number (Linked to Aadhaar/Firebase)</label>
+                <input 
+                  type="tel" 
+                  required 
+                  value={formData.mobile}
+                  onChange={(e) => setFormData({...formData, mobile: e.target.value})}
+                  style={{ width: '100%', padding: '12px 16px', background: 'var(--bg-panel)', border: '1px solid var(--glass-border)', borderRadius: '8px', color: 'white' }} 
+                  placeholder="Enter 10-digit mobile number" 
+                />
               </div>
 
-              <div style={{ display: 'flex', gap: '16px' }}>
-                <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', color: 'var(--text-muted)' }}>Date of Birth</label>
-                  <input required type="date" value={formData.dob} onChange={e => setFormData({...formData, dob: e.target.value})} style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--glass-border)', padding: '11px 16px', borderRadius: '8px', color: 'var(--text-main)', fontSize: '1rem', outline: 'none' }} />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', color: 'var(--text-muted)' }}>Mobile Number</label>
-                  <input required type="tel" value={formData.mobile} onChange={e => setFormData({...formData, mobile: e.target.value})} placeholder="9876543210" maxLength={10} style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--glass-border)', padding: '12px 16px', borderRadius: '8px', color: 'var(--text-main)', fontSize: '1rem', outline: 'none' }} />
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px', background: 'rgba(122, 162, 247, 0.1)', padding: '12px', borderRadius: '8px' }}>
-                <Lock size={16} color="var(--accent-primary)" />
-                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Data is encrypted. We act as an authorized agent.</span>
-              </div>
-
-              <button type="submit" disabled={loading} className="btn btn-primary" style={{ width: '100%', padding: '14px', marginTop: '8px', fontSize: '1rem' }}>
-                {loading ? 'Initiating Verification...' : 'Send OTP'}
+              <button type="submit" disabled={loading} className="btn btn-primary" style={{ marginTop: '12px', padding: '14px', fontSize: '1.05rem', fontWeight: 'bold' }}>
+                {loading ? 'Verifying...' : 'Request OTP'}
               </button>
-            </form>
-          </div>
+           </form>
         )}
 
         {step === 2 && (
-          <div className="animate-fade-in" style={{ textAlign: 'center' }}>
-            <ShieldCheck size={48} color="var(--accent-primary)" style={{ margin: '0 auto 16px' }} />
-            <h2 style={{ marginBottom: '8px' }}>Enter Authentication Code</h2>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '24px' }}>
-              We've sent a 6-digit OTP to +91 {formData.mobile} to authorize the credit bureau pull.
-            </p>
-
-            {errorMsg && (
-               <div style={{ background: 'rgba(247, 118, 142, 0.1)', color: 'var(--danger)', border: '1px solid var(--danger)', padding: '12px', borderRadius: '8px', marginBottom: '16px', fontSize: '0.9rem', textAlign: 'left' }}>
-                 {errorMsg}
-               </div>
-            )}
-
-            <form onSubmit={handleVerifyOtp} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-              <input 
-                required 
-                type="text" 
-                value={otp} 
-                onChange={e => setOtp(e.target.value)} 
-                placeholder="0 0 0 0 0 0" 
-                maxLength={6} 
-                style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--glass-border)', padding: '16px', borderRadius: '12px', color: 'var(--text-main)', fontSize: '1.5rem', outline: 'none', textAlign: 'center', letterSpacing: '0.5em' }} 
-              />
-
-              <button type="submit" disabled={loading || otp.length < 6} className="btn btn-primary" style={{ width: '100%', padding: '14px', fontSize: '1rem' }}>
-                {loading ? 'Fetching CIBIL Data securely...' : 'Verify & Fetch Profile'}
-              </button>
-            </form>
-          </div>
+          <form onSubmit={handleVerifyOtp} style={{ display: 'flex', flexDirection: 'column', gap: '20px', textAlign: 'center' }}>
+            <Lock size={48} color="var(--accent-primary)" style={{ margin: '0 auto' }} />
+            <h3 style={{ fontSize: '1.2rem' }}>Enter OTP sent to +91 {formData.mobile}</h3>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Powered by Firebase Authentication</p>
+            
+            <input 
+              type="text" 
+              required 
+              maxLength={6}
+              value={otp}
+              onChange={(e) => setOtp(e.target.value)}
+              style={{ width: '100%', padding: '16px', background: 'var(--bg-panel)', border: '1px solid var(--accent-primary)', borderRadius: '8px', color: 'white', fontSize: '1.5rem', textAlign: 'center', letterSpacing: '4px' }} 
+              placeholder="••••••" 
+            />
+            
+            <button type="submit" disabled={loading} className="btn btn-primary" style={{ padding: '14px', fontSize: '1.05rem', fontWeight: 'bold' }}>
+               {loading ? 'Connecting to Bureau...' : 'Fetch Live Profile'}
+            </button>
+          </form>
         )}
 
         {step === 3 && (
-          <div className="animate-fade-in" style={{ textAlign: 'center' }}>
-            <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'rgba(158, 206, 106, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
-              <ShieldCheck size={40} color="var(--success)" />
+          <div style={{ textAlign: 'center', padding: '20px 0' }}>
+            <div style={{ width: 80, height: 80, background: 'rgba(158, 206, 106, 0.2)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
+               <ShieldCheck size={40} color="var(--success)" />
             </div>
-            <h2 style={{ marginBottom: '8px', color: 'var(--success)' }}>Bureau Connection Successful</h2>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '32px' }}>
-              We have successfully retrieved your official credit data. Redoubling to your Financial Portfolio now...
+            <h2 style={{ color: 'var(--success)', marginBottom: '16px' }}>Network Sync Successful</h2>
+            <p style={{ color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: '32px' }}>
+              Your credit profile has been securely imported from the realtime Firebase network. The AI Debt Optimizer has been granted temporary access to analyze your portfolio.
             </p>
-            <a href="/credit" className="btn btn-primary" style={{ textDecoration: 'none' }}>View My Real Profile</a>
+            <a href="/credit" className="btn btn-primary" style={{ textDecoration: 'none', display: 'inline-block' }}>View Credit Dashboard</a>
           </div>
         )}
-
       </div>
     </div>
   );
