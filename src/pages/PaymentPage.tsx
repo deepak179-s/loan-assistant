@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { CheckCircle, ShieldCheck } from 'lucide-react';
 
-export default function PaymentPage() {
+export default function PaymentPage({ onBack }: { onBack?: () => void }) {
   const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -47,7 +47,9 @@ export default function PaymentPage() {
           <p style={{ color: 'var(--text-muted)', lineHeight: 1.6 }}>
             Thank you! We have received your payment details and UTR number. Our credit experts will verify the transaction and contact you shortly.
           </p>
-          <a href="/advisor" className="btn btn-secondary" style={{ marginTop: '32px', display: 'inline-block', textDecoration: 'none' }}>Back to Advisor Page</a>
+          {onBack && (
+            <button onClick={onBack} className="btn btn-secondary" style={{ marginTop: '32px', display: 'inline-block' }}>Back to Advisor Page</button>
+          )}
         </div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(300px, 400px) 1fr', gap: '40px', alignItems: 'start' }}>
@@ -57,8 +59,8 @@ export default function PaymentPage() {
             <h3 style={{ marginBottom: '8px' }}>Scan to Pay</h3>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '24px' }}>Amount: ₹299/month</p>
             
-            <div style={{ background: 'white', padding: '16px', borderRadius: '16px', display: 'inline-block' }}>
-              <img src="/pay.jpeg" alt="QR Code for Payment" style={{ width: '100%', maxWidth: '250px', height: 'auto', borderRadius: '8px' }} />
+            <div style={{ background: 'white', padding: '16px', borderRadius: '28px', display: 'inline-block' }}>
+              <img src="/pay.png" alt="QR Code for Payment" style={{ width: '100%', maxWidth: '250px', height: 'auto', borderRadius: '24px' }} />
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: 'var(--success)', marginTop: '24px', fontSize: '0.9rem' }}>
