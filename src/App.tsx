@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, MessageSquare, Bot, Settings, History, Shield, TrendingUp, Briefcase, CreditCard, Sun, Moon } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, Bot, Settings, History, Shield, TrendingUp, Briefcase, CreditCard, Sun, Moon, Menu, X } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import './index.css';
 
@@ -22,6 +22,11 @@ const NavItem = ({ to, icon: Icon, label }: { to: string, icon: any, label: stri
   return (
     <Link 
       to={to} 
+      onClick={() => {
+        // Find if there's a mobile menu state setter and call it
+        const event = new CustomEvent('closeMobileMenu');
+        window.dispatchEvent(event);
+      }}
       className={`nav-item ${isActive ? 'active' : ''}`}
       style={{
         display: 'flex',
@@ -44,24 +49,37 @@ const NavItem = ({ to, icon: Icon, label }: { to: string, icon: any, label: stri
 
 export default function App() {
   const [theme, setTheme] = useState('dark');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { activeUser, setActiveUserId } = useUser();
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
 
+  useEffect(() => {
+    const handleClose = () => setIsMobileMenuOpen(false);
+    window.addEventListener('closeMobileMenu', handleClose);
+    return () => window.removeEventListener('closeMobileMenu', handleClose);
+  }, []);
+
   const toggleTheme = () => setTheme(prev => prev === 'dark' ? 'light' : 'dark');
 
   return (
     <Router>
       <div className="app-container">
+        {/* Mobile Overlay */}
+        <div className={`sidebar-overlay ${isMobileMenuOpen ? 'open' : ''}`} onClick={() => setIsMobileMenuOpen(false)}></div>
+
         {/* Sidebar Navigation */}
-        <aside className="sidebar">
-          <div style={{ padding: '0 12px 32px' }}>
-            <h2 className="text-gradient" style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '1.25rem' }}>
+        <aside className={`sidebar ${isMobileMenuOpen ? 'open' : ''}`}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 12px 32px' }}>
+            <h2 className="text-gradient" style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '1.25rem', margin: 0 }}>
               <TrendingUp />
               AI Repayment IN
             </h2>
+            <button className="mobile-menu-btn" onClick={() => setIsMobileMenuOpen(false)} style={{ display: isMobileMenuOpen ? 'block' : 'none' }}>
+              <X size={24} />
+            </button>
           </div>
           
           <nav style={{ flex: 1 }}>
@@ -98,8 +116,14 @@ export default function App() {
         {/* Main Content Area */}
         <main className="main-content">
           <header className="top-nav">
-            <h3 style={{ fontWeight: 500 }}>Dashboard</h3>
-            <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <button className="mobile-menu-btn" onClick={() => setIsMobileMenuOpen(true)}>
+                <Menu size={24} />
+              </button>
+              <h3 style={{ fontWeight: 500, margin: 0 }}>Dashboard</h3>
+            </div>
+            
+            <div className="header-controls" style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
               <button 
                 onClick={toggleTheme}
                 style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--glass-border)', borderRadius: '50%', width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-main)', transition: 'var(--transition-fast)' }}

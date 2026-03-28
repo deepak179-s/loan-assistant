@@ -129,7 +129,7 @@ export default function KycVerification() {
                 </div>
               </div>
               
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+              <div className="form-grid-2">
                 <div>
                   <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '8px', color: 'var(--text-muted)' }}>PAN Number</label>
                   <input 

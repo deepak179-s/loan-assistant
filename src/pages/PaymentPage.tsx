@@ -52,7 +52,7 @@ export default function PaymentPage({ onBack }: { onBack?: () => void }) {
           )}
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(300px, 400px) 1fr', gap: '40px', alignItems: 'start' }}>
+        <div className="grid-payment">
           
           {/* Left Side: QR Code */}
           <div className="glass-panel" style={{ padding: '32px', textAlign: 'center' }}>
@@ -79,7 +79,7 @@ export default function PaymentPage({ onBack }: { onBack?: () => void }) {
               <input type="hidden" name="subject" value="New Human Callback Payment" />
               <input type="hidden" name="from_name" value="Loan Assistant Demo" />
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+              <div className="form-grid-2">
                 <div>
                   <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '8px', color: 'var(--text-muted)' }}>Full Name</label>
                   <input type="text" name="name" required style={{ width: '100%', padding: '12px 16px', background: 'var(--bg-panel)', border: '1px solid var(--glass-border)', borderRadius: '8px', color: 'white' }} placeholder="Your Name" />
@@ -90,7 +90,7 @@ export default function PaymentPage({ onBack }: { onBack?: () => void }) {
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+              <div className="form-grid-2">
                 <div>
                   <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '8px', color: 'var(--text-muted)' }}>Email Address</label>
                   <input type="email" name="email" required style={{ width: '100%', padding: '12px 16px', background: 'var(--bg-panel)', border: '1px solid var(--glass-border)', borderRadius: '8px', color: 'white' }} placeholder="you@example.com" />

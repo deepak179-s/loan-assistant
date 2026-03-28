@@ -40,9 +40,10 @@ export default function Settings() {
       <h1 className="text-gradient" style={{ marginBottom: '8px' }}>User Configurations</h1>
       <p style={{ color: 'var(--text-muted)', marginBottom: '32px' }}>Manage your profile data, local avatars, and track your Net Worth dynamically.</p>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '24px' }}>
+      {/* Main Settings Area */}
+      <div className="grid-2">
         
-        {/* Profile Settings */}
+        {/* Left Column: API & Privacy Context */}
         <div className="glass-panel" style={{ padding: '24px' }}>
           <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px' }}>
             <Camera color="var(--accent-primary)" size={20} />
