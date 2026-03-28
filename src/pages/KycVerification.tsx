@@ -1,26 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { ShieldCheck, UserCheck, Lock } from 'lucide-react';
 import { useUser } from '../context/UserContext';
 
 export default function KycVerification() {
-  const { activeUser } = useUser();
+  const { setActiveUserId } = useUser();
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    name: activeUser.name,
-    pan: activeUser.pan,
+    name: '',
+    pan: '',
     dob: '',
     mobile: ''
   });
   const [otp, setOtp] = useState('');
-
-  useEffect(() => {
-    setFormData(prev => ({
-      ...prev,
-      name: activeUser.name,
-      pan: activeUser.pan
-    }));
-  }, [activeUser]);
 
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -62,7 +54,7 @@ export default function KycVerification() {
           'Content-Type': 'application/json',
           'x-api-key': 'mock_decentro_sandbox_key_123'
         },
-        body: JSON.stringify({ mobile: formData.mobile, otp })
+        body: JSON.stringify({ mobile: formData.mobile, otp, name: formData.name })
       });
       
       const data = await response.json();
@@ -71,6 +63,14 @@ export default function KycVerification() {
       // Successfully fetched CIBIL data here (data.data)
       console.log("Bureau Data:", data.data);
       localStorage.setItem('cibilData', JSON.stringify(data.data));
+      
+      // Auto-switch UserContext
+      const lowerName = formData.name.toLowerCase();
+      if (lowerName.includes('sumit')) setActiveUserId('sumit');
+      else if (lowerName.includes('kashish')) setActiveUserId('kashish');
+      else if (lowerName.includes('tarun')) setActiveUserId('tarun');
+      else setActiveUserId('deepak');
+
       setStep(3);
     } catch (err: any) {
       setErrorMsg(err.message);
