@@ -3,7 +3,7 @@ import { useUser } from '../context/UserContext';
 
 export default function ForgivenessTracker() {
   const { creditProfile } = useUser();
-  const numLoans = creditProfile?.loans?.length || 5;
+  const numLoans = creditProfile?.active_loans?.length || 5;
   const [payments, setPayments] = useState(82);
   const totalRequired = 120;
   

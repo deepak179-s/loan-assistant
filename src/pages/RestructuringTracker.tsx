@@ -3,7 +3,7 @@ import { useUser } from '../context/UserContext';
 
 export default function RestructuringTracker() {
   const { creditProfile } = useUser();
-  const totalEmi = creditProfile?.loans?.reduce((sum: number, l: any) => sum + l.monthlyEmi, 0) || 38400;
+  const totalEmi = creditProfile?.active_loans?.reduce((sum: number, l: any) => sum + l.emi, 0) || 38400;
   const [csisMonths] = useState(12);
   const totalMoratorium = 12; // 1 year after course
   
