@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ShieldCheck, UserCheck, Lock } from 'lucide-react';
 import { useUser } from '../context/UserContext';
 import { auth } from '../config/firebase';
@@ -23,6 +23,15 @@ export default function KycVerification() {
   });
   const [otp, setOtp] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+
+  useEffect(() => {
+    return () => {
+      if (window.recaptchaVerifier) {
+        window.recaptchaVerifier.clear();
+        window.recaptchaVerifier = null;
+      }
+    };
+  }, []);
 
   const setupRecaptcha = () => {
     if (!window.recaptchaVerifier) {
