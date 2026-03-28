@@ -9,11 +9,11 @@ export default function Simulator() {
   const [showXai, setShowXai] = useState(false);
   const [showHitl, setShowHitl] = useState(false);
 
-  const totalPrincipal = creditProfile?.loans?.reduce((sum: number, l: any) => sum + l.currentBalance, 0) || 0;
-  const totalEmi = creditProfile?.loans?.reduce((sum: number, l: any) => sum + l.monthlyEmi, 0) || 0;
+  const totalPrincipal = creditProfile?.active_loans?.reduce((sum: number, l: any) => sum + l.outstanding_balance, 0) || 0;
+  const totalEmi = creditProfile?.active_loans?.reduce((sum: number, l: any) => sum + l.emi, 0) || 0;
   
   const avgInterest = totalPrincipal > 0 
-    ? (creditProfile?.loans?.reduce((sum: number, l: any) => sum + (l.interestRate * l.currentBalance), 0) / totalPrincipal) || 8.5
+    ? (creditProfile?.active_loans?.reduce((sum: number, l: any) => sum + (l.interest_rate * l.outstanding_balance), 0) / totalPrincipal) || 8.5
     : 8.5;
 
   const generateData = () => {
