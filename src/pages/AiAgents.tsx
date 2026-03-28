@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useUser } from '../context/UserContext';
-import { Clock, MessageSquare, Trash2, Save } from 'lucide-react';
+import { Clock, MessageSquare, Save } from 'lucide-react';
 
 interface Message {
   id: number;
