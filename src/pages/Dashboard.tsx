@@ -1,52 +1,74 @@
 import { Link } from 'react-router-dom';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { useUser } from '../context/UserContext';
 
-/* Dashboard Component */
 export default function Dashboard() {
+  const { creditProfile, profileLoading } = useUser();
+
+  const totalPrincipal = creditProfile?.loans?.reduce((sum: number, l: any) => sum + l.currentBalance, 0) || 0;
+  const totalEmi = creditProfile?.loans?.reduce((sum: number, l: any) => sum + l.monthlyEmi, 0) || 0;
+  const cibil = creditProfile?.cibilScore || 0;
+  
+  const avgInterest = totalPrincipal > 0 
+    ? (creditProfile?.loans?.reduce((sum: number, l: any) => sum + (l.interestRate * l.currentBalance), 0) / totalPrincipal) || 8.5
+    : 8.5;
+
   const generateChartData = () => {
     const data = [];
-    let principal = 3670000;
-    const totalPayment = 38400;
-    const interestRate = 0.088 / 12;
-    for (let year = 2024; year <= 2038; year++) {
-      if (principal <= 0) break;
+    let principal = totalPrincipal;
+    const totalPayment = totalEmi;
+    const interestRate = (avgInterest / 100) / 12;
+    
+    if (principal === 0 || totalPayment === 0) return [];
+    
+    let year = new Date().getFullYear();
+    while (principal > 0 && year <= 2045) {
       data.push({ name: year.toString(), Balance: Math.max(0, Math.round(principal)) });
       principal = principal - (totalPayment * 12) + (principal * interestRate * 12);
+      year++;
     }
     return data;
   };
+  
   const chartData = generateChartData();
+  const payoffYear = chartData.length > 0 ? chartData[chartData.length - 1].name : 'Paid Off';
+
+  if (profileLoading) {
+    return <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>Loading AI Financial Overview...</div>;
+  }
 
   return (
     <div>
       <h1 className="text-gradient">Financial Overview</h1>
       <p style={{ color: 'var(--text-muted)', marginBottom: '32px', fontSize: '1.1rem' }}>
-        AI-powered insights based on your CIBIL profile and macroeconomic risk factors.
+        AI-powered insights based on your real-time CIBIL profile and macroeconomic risk factors.
       </p>
       
       {/* Top Value Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '24px', marginBottom: '32px' }}>
         <div className="glass-panel" style={{ padding: '24px' }}>
           <h4 style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '8px' }}>Total Outstanding Debt</h4>
-          <h2 style={{ fontSize: '2.5rem', marginBottom: '8px' }}>₹36,70,000</h2>
+          <h2 style={{ fontSize: '2.5rem', marginBottom: '8px' }}>₹{totalPrincipal.toLocaleString('en-IN')}</h2>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center', fontSize: '0.85rem' }}>
-            <span style={{ color: 'var(--danger)', background: 'rgba(247, 118, 142, 0.1)', padding: '2px 8px', borderRadius: '12px' }}>8.8% APY</span>
+            <span style={{ color: 'var(--danger)', background: 'rgba(247, 118, 142, 0.1)', padding: '2px 8px', borderRadius: '12px' }}>{avgInterest.toFixed(1)}% APY</span>
             <span style={{ color: 'var(--text-muted)' }}>Avg Interest</span>
           </div>
         </div>
         
         <div className="glass-panel" style={{ padding: '24px' }}>
           <h4 style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '8px' }}>Projected Payoff Date</h4>
-          <h2 style={{ fontSize: '2.5rem', marginBottom: '8px' }}>Oct 2038</h2>
+          <h2 style={{ fontSize: '2.5rem', marginBottom: '8px' }}>Oct {payoffYear}</h2>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center', fontSize: '0.85rem' }}>
-            <span style={{ color: 'var(--success)', background: 'rgba(158, 206, 106, 0.1)', padding: '2px 8px', borderRadius: '12px' }}>-2 Years</span>
+            <span style={{ color: 'var(--success)', background: 'rgba(158, 206, 106, 0.1)', padding: '2px 8px', borderRadius: '12px' }}>Optimized</span>
             <span style={{ color: 'var(--text-muted)' }}>vs Standard Plan</span>
           </div>
         </div>
         
         <div className="glass-panel" style={{ padding: '24px' }}>
           <h4 style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '8px' }}>CIBIL / Risk Score</h4>
-          <h2 className="text-gradient-alt" style={{ fontSize: '2.5rem', marginBottom: '8px' }}>784 (Low)</h2>
+          <h2 className="text-gradient-alt" style={{ fontSize: '2.5rem', marginBottom: '8px' }}>
+            {cibil} {cibil > 750 ? '(Excellent)' : cibil > 650 ? '(Fair)' : '(Low)'}
+          </h2>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center', fontSize: '0.85rem' }}>
             <span style={{ color: 'var(--text-muted)' }}>Powered by AI Ensembles</span>
             <Link to="/simulator" style={{ color: 'var(--accent-primary)', textDecoration: 'none' }}>Analysis</Link>
@@ -74,7 +96,7 @@ export default function Dashboard() {
                 <Tooltip 
                   contentStyle={{ backgroundColor: 'var(--bg-panel)', border: '1px solid var(--glass-border)', borderRadius: '8px' }}
                   itemStyle={{ color: 'var(--accent-primary)' }}
-                  formatter={(value) => `₹${Number(value).toLocaleString('en-IN')}`}
+                  formatter={(value: any) => `₹${Number(value).toLocaleString('en-IN')}`}
                 />
                 <Area type="monotone" dataKey="Balance" stroke="var(--accent-primary)" strokeWidth={3} fillOpacity={1} fill="url(#colorBalance)" />
               </AreaChart>

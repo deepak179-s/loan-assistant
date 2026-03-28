@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { db } from '../config/firebase';
 
 export type UserProfile = {
   id: string;
@@ -42,12 +44,16 @@ export const USERS: Record<string, UserProfile> = {
 interface UserContextType {
   activeUser: UserProfile;
   setActiveUserId: (id: string) => void;
+  creditProfile: any | null;
+  profileLoading: boolean;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export function UserProvider({ children }: { children: React.ReactNode }) {
   const [activeUserId, setActiveUserId] = useState<string>('deepak');
+  const [creditProfile, setCreditProfile] = useState<any>(null);
+  const [profileLoading, setProfileLoading] = useState(true);
 
   useEffect(() => {
     const savedId = localStorage.getItem('activeUserId');
@@ -56,20 +62,39 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  useEffect(() => {
+    setProfileLoading(true);
+    setCreditProfile(null);
+    
+    // Subscribe to active user's credit profile
+    const unsub = onSnapshot(doc(db, 'credit_profiles', activeUserId), (docSnap) => {
+      if (docSnap.exists()) {
+        setCreditProfile(docSnap.data());
+      } else {
+        setCreditProfile(null);
+      }
+      setProfileLoading(false);
+    }, (error) => {
+      console.error("Error fetching credit profile:", error);
+      setProfileLoading(false);
+    });
+
+    return () => unsub();
+  }, [activeUserId]);
+
   const handleSetUser = (id: string) => {
     if (USERS[id]) {
       setActiveUserId(id);
       localStorage.setItem('activeUserId', id);
-      
-      // When user changes, we could potentially reload their specific CIBIL from backend/mock
-      // For now, let's keep it clean
     }
   };
 
   return (
     <UserContext.Provider value={{
       activeUser: USERS[activeUserId],
-      setActiveUserId: handleSetUser
+      setActiveUserId: handleSetUser,
+      creditProfile,
+      profileLoading
     }}>
       {children}
     </UserContext.Provider>

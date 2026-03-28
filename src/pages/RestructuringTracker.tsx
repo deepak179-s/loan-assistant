@@ -1,6 +1,9 @@
 import { useState } from 'react';
+import { useUser } from '../context/UserContext';
 
 export default function RestructuringTracker() {
+  const { creditProfile } = useUser();
+  const totalEmi = creditProfile?.loans?.reduce((sum: number, l: any) => sum + l.monthlyEmi, 0) || 38400;
   const [csisMonths] = useState(12);
   const totalMoratorium = 12; // 1 year after course
   
@@ -41,7 +44,7 @@ export default function RestructuringTracker() {
             
             <div style={{ background: 'rgba(255,158,100,0.1)', padding: '16px', borderRadius: '8px', borderLeft: '4px solid var(--accent-secondary)' }}>
               <strong>Important Notice</strong>
-              <p style={{ fontSize: '0.85rem', marginTop: '4px' }}>EMI payments of ₹38,400 will commence starting next month as your moratorium expires. Ensure your auto-debit mandate is active.</p>
+              <p style={{ fontSize: '0.85rem', margin: '4px 0 0' }}>EMI payments of ₹{totalEmi.toLocaleString('en-IN')} will commence starting next month as your moratorium expires. Ensure your auto-debit mandate is active.</p>
             </div>
           </div>
           

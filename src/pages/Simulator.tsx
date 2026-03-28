@@ -1,28 +1,39 @@
 import { useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { useUser } from '../context/UserContext';
 
 export default function Simulator() {
+  const { creditProfile, profileLoading } = useUser();
   const [extraPayment, setExtraPayment] = useState<number>(0);
   const [confidence, setConfidence] = useState<number>(92);
   const [showXai, setShowXai] = useState(false);
   const [showHitl, setShowHitl] = useState(false);
 
-  // Generate mock projection data based on extra payment
+  const totalPrincipal = creditProfile?.loans?.reduce((sum: number, l: any) => sum + l.currentBalance, 0) || 0;
+  const totalEmi = creditProfile?.loans?.reduce((sum: number, l: any) => sum + l.monthlyEmi, 0) || 0;
+  
+  const avgInterest = totalPrincipal > 0 
+    ? (creditProfile?.loans?.reduce((sum: number, l: any) => sum + (l.interestRate * l.currentBalance), 0) / totalPrincipal) || 8.5
+    : 8.5;
+
   const generateData = () => {
     const data = [];
-    let principal = 3250000;
-    const basePayment = 38400; // Original EMI
+    let principal = totalPrincipal;
+    const basePayment = totalEmi; 
     const totalPayment = basePayment + extraPayment;
-    const interestRate = 0.085 / 12; // 8.5%
+    const interestRate = (avgInterest / 100) / 12;
     
-    for (let year = 2024; year <= 2040; year++) {
-      if (principal <= 0) break;
+    if (principal === 0 || totalPayment === 0) return [];
+    
+    let year = new Date().getFullYear();
+    while (principal > 0 && year <= 2050) {
       data.push({
         year: year.toString(),
         Balance: Math.max(0, Math.round(principal)),
         InterestPaid: Math.round(principal * interestRate * 12)
       });
       principal = principal - (totalPayment * 12) + (principal * interestRate * 12);
+      year++;
     }
     return data;
   };
@@ -33,14 +44,19 @@ export default function Simulator() {
     const val = parseInt(e.target.value);
     setExtraPayment(val);
     
-    if (val > 100000) {
+    // Simple heuristic for demo scale
+    if (val > (totalEmi * 2.5)) {
       setConfidence(45);
       setShowHitl(true);
     } else {
-      setConfidence(92 - (val / 10000));
+      setConfidence(92 - (val / Math.max(10000, totalEmi)));
       setShowHitl(false);
     }
   };
+
+  if (profileLoading) {
+    return <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>Loading AI Simulation Matrix...</div>;
+  }
 
   return (
     <div>
@@ -48,7 +64,7 @@ export default function Simulator() {
         <div>
           <h1 className="text-gradient">Predictive EMI Simulations</h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem' }}>
-            Powered by Stacked Ensemble Machine Learning Models (India Market).
+            Powered by Stacked Ensemble Machine Learning Models on your actual debt portfolio.
           </p>
         </div>
         
@@ -62,10 +78,7 @@ export default function Simulator() {
         </div>
       </div>
 
-      {/* Comparison Grid */}
       <div className={showXai ? "grid-2" : ""} style={{ display: showXai ? undefined : 'block', transition: 'all 0.3s' }}>
-        
-        {/* Main Controls */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           
           <div className="glass-panel" style={{ padding: '24px' }}>
@@ -78,7 +91,7 @@ export default function Simulator() {
                 <input 
                   type="range" 
                   min="0" 
-                  max="150000" 
+                  max={Math.max(150000, totalEmi * 3)} 
                   step="5000" 
                   value={extraPayment} 
                   onChange={handleSliderChange}
@@ -116,7 +129,6 @@ export default function Simulator() {
 
         </div>
 
-        {/* XAI Panel */}
         {showXai && (
           <div className="glass-panel animate-fade-in" style={{ padding: '24px', borderLeft: '4px solid var(--accent-tertiary)' }}>
             <h3 style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -130,7 +142,7 @@ export default function Simulator() {
               <XaiFeature name="IT Sector Stability Index" impact={35} type="positive" />
               <XaiFeature name="RBI Repo Rate Inflation" impact={22} type="negative" />
               <XaiFeature name="EMI to Income Ratio" impact={40} type="positive" />
-              <XaiFeature name="Tier 1 College (IIT/NIT) Status" impact={15} type="positive" />
+              <XaiFeature name="Tier 1 College Status" impact={15} type="positive" />
             </div>
 
             <div style={{ marginTop: '32px', padding: '16px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
@@ -144,13 +156,12 @@ export default function Simulator() {
 
       </div>
 
-      {/* HITL Routing Modal */}
       {showHitl && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.8)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div className="glass-panel animate-fade-in" style={{ width: '500px', padding: '32px', borderTop: '4px solid var(--warning)' }}>
             <h2 style={{ marginBottom: '16px', color: 'var(--warning)' }}>Edge Case Detected</h2>
             <p style={{ marginBottom: '24px', color: 'var(--text-muted)' }}>
-              Your proposed extra prepayment is unusually high (over ₹1,00,000 extra) compared to typical Tier 1 city variance models. AI prediction confidence has dropped below the 50% threshold to prevent liquidity drain.
+              Your proposed extra prepayment is unusually high relative to your EMI profile. AI prediction confidence has dropped below the threshold to prevent liquidity drain.
             </p>
             
             <div style={{ background: 'rgba(255,255,255,0.05)', padding: '16px', borderRadius: '8px', marginBottom: '24px' }}>
@@ -163,7 +174,7 @@ export default function Simulator() {
             
             <div style={{ display: 'flex', gap: '16px', justifyContent: 'flex-end' }}>
               <button className="btn btn-secondary" onClick={() => setShowHitl(false)}>Cancel Strategy</button>
-              <button className="btn btn-primary" onClick={() => { setShowHitl(false); alert("Request routed to human advisor. They have full context via DynamoDB session state."); }}>Route to Human Advisor</button>
+              <button className="btn btn-primary" onClick={() => { setShowHitl(false); alert("Request routed to human advisor."); }}>Route to Human Advisor</button>
             </div>
           </div>
         </div>
