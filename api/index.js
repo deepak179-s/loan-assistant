@@ -44,7 +44,6 @@ app.post('/api/kyc/request-otp', authenticateApiKey, (req, res) => {
 
   // Generate a mock 6-digit OTP
   const generatedOtp = '123456'; // Static for sandbox testing, but in prod would be Math.random()
-  otpStorage.set(mobile, { otp: generatedOtp, pan });
   
   console.log(`[BUREAU SANDBOX] Sent OTP ${generatedOtp} to +91 ${mobile} for PAN ${pan}`);
 
@@ -57,17 +56,17 @@ app.post('/api/kyc/request-otp', authenticateApiKey, (req, res) => {
 });
 
 app.post('/api/kyc/verify-otp', authenticateApiKey, (req, res) => {
-  const { mobile, otp } = req.body;
-  const stored = otpStorage.get(mobile);
+  const { mobile, otp, name } = req.body;
 
-  if (!stored || stored.otp !== otp) {
+  if (otp !== '123456') {
     return res.status(400).json({ error: 'Invalid OTP' });
   }
 
-  // Clear OTP
-  otpStorage.delete(mobile);
-
-  const pan = stored.pan;
+  const lowerName = (name || '').toLowerCase();
+  let pan = 'DEEPAK';
+  if (lowerName.includes('sumit')) pan = 'SUMIT1234Y';
+  else if (lowerName.includes('kashish')) pan = 'KASHI1234J';
+  else if (lowerName.includes('tarun')) pan = 'TARUN1234S';
   let cibil_score = 784;
   let risk_band = 'Low Risk';
   let active_loans = [];
