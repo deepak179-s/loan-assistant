@@ -3,6 +3,8 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useUser } from '../context/UserContext';
 import { Clock, MessageSquare, Save } from 'lucide-react';
+import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
+import { db } from '../config/firebase';
 
 interface Message {
   id: number;
@@ -30,40 +32,50 @@ export default function AiAgents() {
   const [messages, setMessages] = useState<Message[]>([defaultMessage]);
   const [histories, setHistories] = useState<ChatSession[]>([]);
   const [viewingHistoryId, setViewingHistoryId] = useState<string | null>(null);
+  const [dbLoaded, setDbLoaded] = useState(false);
 
+  // Load state from Firebase
   useEffect(() => {
-    const currentChatKey = `agentChat_${activeUser.id}`;
-    const historiesKey = `agentHistories_${activeUser.id}`;
+    if (!activeUser?.id) return;
+    setDbLoaded(false);
 
-    try {
-      const savedChat = localStorage.getItem(currentChatKey);
-      if (savedChat) {
-        setMessages(JSON.parse(savedChat));
+    const docRef = doc(db, "chat_histories", activeUser.id);
+    const unsub = onSnapshot(docRef, (snap) => {
+      if (snap.exists()) {
+        const data = snap.data();
+        setMessages(data.activeMessages?.length > 0 ? data.activeMessages : [defaultMessage]);
+        setHistories(data.historicalSessions || []);
       } else {
-        setMessages([{ ...defaultMessage, text: `Hello ${activeUser.name.split(' ')[0]}! I am your Debt Optimizer. How can I help you today?` }]);
-      }
-
-      const savedHistories = localStorage.getItem(historiesKey);
-      if (savedHistories) {
-        setHistories(JSON.parse(savedHistories));
-      } else {
+        setMessages([defaultMessage]);
         setHistories([]);
       }
-    } catch (e) {
-      console.error("Failed to load history", e);
-    }
-    setViewingHistoryId(null);
+      setDbLoaded(true);
+    }, (error) => {
+      console.error("Error fetching chat histories:", error);
+      setDbLoaded(true);
+    });
+
+    return () => unsub();
   }, [activeUser.id]);
 
+  // Save state to Firebase whenever messages or histories change, but only if db is loaded 
+  // and we are NOT viewing a read-only history.
   useEffect(() => {
-    if (viewingHistoryId === null && messages.length > 0) {
-      localStorage.setItem(`agentChat_${activeUser.id}`, JSON.stringify(messages));
-    }
-  }, [messages, activeUser.id, viewingHistoryId]);
-
-  useEffect(() => {
-    localStorage.setItem(`agentHistories_${activeUser.id}`, JSON.stringify(histories));
-  }, [histories, activeUser.id]);
+    if (!dbLoaded || viewingHistoryId !== null) return;
+    
+    // Use a small debounce or direct setDoc since it's a demo
+    const saveToDb = async () => {
+      try {
+        await setDoc(doc(db, "chat_histories", activeUser.id), {
+          activeMessages: messages,
+          historicalSessions: histories
+        }, { merge: true });
+      } catch (err) {
+        console.error("Failed to save chat to DB:", err);
+      }
+    };
+    saveToDb();
+  }, [messages, histories, activeUser.id, dbLoaded, viewingHistoryId]);
 
   const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -72,7 +84,7 @@ export default function AiAgents() {
   }, [messages, isTyping, viewingHistoryId]);
 
   const handleSend = async () => {
-    if (!input.trim() || viewingHistoryId) return; // Disallow sending if viewing history
+    if (!input.trim() || viewingHistoryId) return;
     
     const userMessage: Message = { id: Date.now(), sender: 'user', text: input };
     const conversation = [...messages, userMessage];
@@ -82,16 +94,14 @@ export default function AiAgents() {
     setIsTyping(true);
 
     try {
-      const savedData = localStorage.getItem('cibilData');
-      let parsedCibil = null;
-      if (savedData) {
-        try { parsedCibil = JSON.parse(savedData); } catch (e) {}
-      }
+      // Get CIBIL data straight from Firebase to pass to AI context
+      const cibilSnap = await getDoc(doc(db, "credit_profiles", activeUser.id));
+      const parsedCibil = cibilSnap.exists() ? cibilSnap.data() : "No specific profile data available.";
 
       const userData = {
         name: activeUser.name,
         pan: activeUser.pan,
-        creditProfile: parsedCibil || "No specific profile data available."
+        creditProfile: parsedCibil
       };
 
       const response = await fetch('/api/chat', {
@@ -129,8 +139,11 @@ export default function AiAgents() {
       date: new Date().toLocaleString(),
       messages: [...messages]
     };
-    setHistories(prev => [newSession, ...prev]);
+    
+    const newHistories = [newSession, ...histories];
     const resetMessage = { ...defaultMessage, text: `Hello ${activeUser.name.split(' ')[0]}! Previous chat saved to history. How can I assist you further?` };
+    
+    setHistories(newHistories);
     setMessages([resetMessage]);
     setViewingHistoryId(null);
   };
@@ -214,7 +227,7 @@ export default function AiAgents() {
         </div>
         
         <div style={{ flex: 1, padding: '24px', overflowY: 'auto' }}>
-           <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: '24px', fontSize: '0.85rem' }}>Session Started. State synchronized via AWS DynamoDB (Mumbai Region).</p>
+           <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: '24px', fontSize: '0.85rem' }}>Session Started. State synchronized via Firebase Firestore.</p>
            
            {activeMessages.map((msg) => (
              <div key={msg.id} style={{ display: 'flex', gap: '16px', marginBottom: '24px', flexDirection: msg.sender === 'user' ? 'row-reverse' : 'row' }}>
