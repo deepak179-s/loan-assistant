@@ -1,6 +1,9 @@
 import { useState } from 'react';
+import { useUser } from '../context/UserContext';
 
 export default function ForgivenessTracker() {
+  const { creditProfile } = useUser();
+  const numLoans = creditProfile?.loans?.length || 5;
   const [payments, setPayments] = useState(82);
   const totalRequired = 120;
   
@@ -43,7 +46,7 @@ export default function ForgivenessTracker() {
           <div className="glass-panel" style={{ padding: '32px' }}>
             <h3 style={{ marginBottom: '16px' }}>Debt Portfolio Consolidation Analysis</h3>
             <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '24px' }}>
-              The AI has analyzed your 5 separate Federal Direct Loans.
+              The AI has analyzed your {numLoans} separate Federal/Education Loans.
             </p>
             
             <div style={{ display: 'grid', gap: '16px' }}>

@@ -1,32 +1,8 @@
 import { ShieldCheck, CreditCard, Landmark, LineChart, AlertTriangle } from 'lucide-react';
-import { useState, useEffect } from 'react';
-import { doc, onSnapshot } from 'firebase/firestore';
-import { db } from '../config/firebase';
 import { useUser } from '../context/UserContext';
 
 export default function CreditProfile() {
-  const { activeUser } = useUser();
-  const [creditData, setCreditData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!activeUser?.id) return;
-    
-    // Set up a real-time listener for the user's credit profile
-    const unsub = onSnapshot(doc(db, "credit_profiles", activeUser.id), (docSnap) => {
-      if (docSnap.exists()) {
-        setCreditData(docSnap.data());
-      } else {
-        setCreditData(null);
-      }
-      setLoading(false);
-    }, (error) => {
-      console.error("Error fetching credit profile:", error);
-      setLoading(false);
-    });
-
-    return () => unsub();
-  }, [activeUser.id]);
+  const { creditProfile: creditData, profileLoading: loading, activeUser } = useUser();
 
   if (loading) {
     return <div style={{ padding: '40px', textAlign: 'center' }}>Loading live CIBIL data from secure network...</div>;
