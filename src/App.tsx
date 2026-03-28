@@ -11,6 +11,8 @@ import RestructuringTracker from './pages/RestructuringTracker';
 import CreditProfile from './pages/CreditProfile';
 import KycVerification from './pages/KycVerification';
 import SettingsConfig from './pages/Settings';
+import HumanCallback from './pages/HumanCallback';
+import { useUser, USERS } from './context/UserContext';
 
 /* Sidebar Navigation Item */
 const NavItem = ({ to, icon: Icon, label }: { to: string, icon: any, label: string }) => {
@@ -42,12 +44,10 @@ const NavItem = ({ to, icon: Icon, label }: { to: string, icon: any, label: stri
 
 export default function App() {
   const [theme, setTheme] = useState('dark');
-  const [profilePic, setProfilePic] = useState('/me.png');
+  const { activeUser, setActiveUserId } = useUser();
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
-    const savedPic = localStorage.getItem('profilePic');
-    if (savedPic) setProfilePic(savedPic);
   }, [theme]);
 
   const toggleTheme = () => setTheme(prev => prev === 'dark' ? 'light' : 'dark');
@@ -107,11 +107,21 @@ export default function App() {
                 {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
               </button>
               <div style={{ textAlign: 'right', fontSize: '0.9rem' }}>
-                <div style={{ fontWeight: 600 }}>Deepak S.</div>
-                <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>B.Tech · Standard Repayment</div>
+                <select 
+                  value={activeUser.id} 
+                  onChange={(e) => setActiveUserId(e.target.value)}
+                  style={{ background: 'transparent', border: 'none', color: 'inherit', fontWeight: 600, fontSize: '1rem', cursor: 'pointer', outline: 'none', appearance: 'none', textAlign: 'right', width: '100%' }}
+                >
+                  {Object.values(USERS).map(user => (
+                    <option key={user.id} value={user.id} style={{ color: 'black' }}>
+                      {user.name}
+                    </option>
+                  ))}
+                </select>
+                <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>{activeUser.title}</div>
               </div>
               <img 
-                src={profilePic} 
+                src={activeUser.image} 
                 alt="Profile"
                 onError={(e) => { e.currentTarget.src = '/me.png' }}
                 style={{ width: 44, height: 44, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--glass-border)', background: 'var(--bg-panel-light)' }}
@@ -128,6 +138,7 @@ export default function App() {
               <Route path="/restructuring" element={<RestructuringTracker />} />
               <Route path="/credit" element={<CreditProfile />} />
               <Route path="/settings" element={<SettingsConfig />} />
+              <Route path="/advisor" element={<HumanCallback />} />
               <Route path="*" element={<div style={{ padding: '40px', textAlign: 'center' }}><h2>Coming Soon!</h2><p>This module is currently being built.</p></div>} />
             </Routes>
           </div>

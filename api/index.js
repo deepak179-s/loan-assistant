@@ -44,7 +44,7 @@ app.post('/api/kyc/request-otp', authenticateApiKey, (req, res) => {
 
   // Generate a mock 6-digit OTP
   const generatedOtp = '123456'; // Static for sandbox testing, but in prod would be Math.random()
-  otpStorage.set(mobile, generatedOtp);
+  otpStorage.set(mobile, { otp: generatedOtp, pan });
   
   console.log(`[BUREAU SANDBOX] Sent OTP ${generatedOtp} to +91 ${mobile} for PAN ${pan}`);
 
@@ -58,55 +58,66 @@ app.post('/api/kyc/request-otp', authenticateApiKey, (req, res) => {
 
 app.post('/api/kyc/verify-otp', authenticateApiKey, (req, res) => {
   const { mobile, otp } = req.body;
+  const stored = otpStorage.get(mobile);
 
-  if (otpStorage.get(mobile) !== otp) {
+  if (!stored || stored.otp !== otp) {
     return res.status(400).json({ error: 'Invalid OTP' });
   }
 
   // Clear OTP
   otpStorage.delete(mobile);
 
+  const pan = stored.pan;
+  let cibil_score = 784;
+  let risk_band = 'Low Risk';
+  let active_loans = [];
+  let credit_cards = [];
+
+  if (pan === 'SUMIT1234Y') {
+    cibil_score = 650;
+    risk_band = 'High Risk';
+    active_loans = [
+      { lender: 'Bajaj Finserv', original_principal: 500000, outstanding_balance: 450000, emi: 18000, interest_rate: 14.5, tenure_months: 36, percent_repaid: 10 }
+    ];
+    credit_cards = [
+      { issuer: 'SBI SimplyClick', limit: 100000, utilized: 90000, next_bill: '10th Oct' }
+    ];
+  } else if (pan === 'KASHI1234J') {
+    cibil_score = 810;
+    risk_band = 'Excellent';
+    active_loans = []; // Wealth Builder, no loans
+    credit_cards = [
+      { issuer: 'HDFC Regalia', limit: 500000, utilized: 50000, next_bill: '5th Nov' }
+    ];
+  } else if (pan === 'TARUN1234S') {
+    cibil_score = 720;
+    risk_band = 'Medium Risk';
+    active_loans = [
+      { lender: 'SBI Home Loan', original_principal: 5000000, outstanding_balance: 4800000, emi: 45000, interest_rate: 8.7, tenure_months: 240, percent_repaid: 4 },
+      { lender: 'HDFC Car Loan', original_principal: 800000, outstanding_balance: 600000, emi: 15000, interest_rate: 9.5, tenure_months: 60, percent_repaid: 25 }
+    ];
+    credit_cards = [];
+  } else {
+    // Default (Deepak)
+    active_loans = [
+      { lender: 'SBI Education Loan', original_principal: 3823500, outstanding_balance: 3250000, emi: 38400, interest_rate: 8.5, tenure_months: 180, percent_repaid: 15 },
+      { lender: 'HDFC Personal Loan', original_principal: 763600, outstanding_balance: 420000, emi: 14500, interest_rate: 11.2, tenure_months: 60, percent_repaid: 45 }
+    ];
+    credit_cards = [
+      { issuer: 'ICICI Coral Credit Card', limit: 200000, utilized: 45200, next_bill: '12th Oct' },
+      { issuer: 'Axis Bank Flipkart Card', limit: 150000, utilized: 12400, next_bill: '18th Oct' }
+    ];
+  }
+
   // Return realistic mocked Credit Bureau JSON data
   res.json({
     status: 'success',
     message: 'Bureau Data Fetched Successfully',
     data: {
-      cibil_score: 784,
-      risk_band: 'Low Risk',
-      active_loans: [
-        {
-          lender: 'SBI Education Loan',
-          original_principal: 3823500,
-          outstanding_balance: 3250000,
-          emi: 38400,
-          interest_rate: 8.5,
-          tenure_months: 180,
-          percent_repaid: 15
-        },
-        {
-          lender: 'HDFC Personal Loan',
-          original_principal: 763600,
-          outstanding_balance: 420000,
-          emi: 14500,
-          interest_rate: 11.2,
-          tenure_months: 60,
-          percent_repaid: 45
-        }
-      ],
-      credit_cards: [
-        {
-          issuer: 'ICICI Coral Credit Card',
-          limit: 200000,
-          utilized: 45200,
-          next_bill: '12th Oct'
-        },
-        {
-          issuer: 'Axis Bank Flipkart Card',
-          limit: 150000,
-          utilized: 12400,
-          next_bill: '18th Oct'
-        }
-      ]
+      cibil_score,
+      risk_band,
+      active_loans,
+      credit_cards
     }
   });
 });
