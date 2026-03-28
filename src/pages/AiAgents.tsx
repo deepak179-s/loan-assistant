@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-
-type Agent = 'Optimizer' | 'Tracker' | 'WealthBuilder';
+import { useUser } from '../context/UserContext';
+import { Clock, MessageSquare, Trash2, Save } from 'lucide-react';
 
 interface Message {
   id: number;
@@ -10,177 +10,183 @@ interface Message {
   text: string;
 }
 
+interface ChatSession {
+  id: string;
+  date: string;
+  messages: Message[];
+}
+
 export default function AiAgents() {
-  const [activeAgent, setActiveAgent] = useState<Agent>('Optimizer');
+  const { activeUser } = useUser();
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const [profilePic, setProfilePic] = useState('/me.png');
 
-  useEffect(() => {
-    const savedPic = localStorage.getItem('profilePic');
-    if (savedPic) setProfilePic(savedPic);
-  }, []);
-  
-  const defaultMessages: Record<Agent, Message[]> = {
-    Optimizer: [
-      { id: 1, sender: 'ai', text: 'Hello! I analyze macroeconomic trends and RBI repo rates. I\'ve noticed your SBI Education Loan could qualify for the CSIS Interest Subsidy. Should we run a predictive simulation on claiming Section 80E deductions?' }
-    ],
-    Tracker: [
-      { id: 1, sender: 'ai', text: 'Hi! I manage PPF, SIPs, and mutual fund projections. Did you know allocating just ₹5,000 more per month to your Nifty-50 Index SIP could yield an additional ₹15 Lakhs by 2035?' }
-    ],
-    WealthBuilder: [
-      { id: 1, sender: 'ai', text: 'Welcome! I focus on long-term wealth strategies. Let\'s evaluate your CIBIL profile to see if transferring funds towards the National Pension System (NPS) outweighs early loan prepayment this year.' }
-    ]
+  const defaultMessage: Message = { 
+    id: 1, 
+    sender: 'ai', 
+    text: `Hello ${activeUser.name.split(' ')[0]}! I am your Debt Optimizer Agent. I analyze macroeconomic trends and RBI repo rates to help minimize your debt. How can I help you today?` 
   };
 
-  const [messages, setMessages] = useState<Record<Agent, Message[]>>(() => {
-    try {
-      const saved = localStorage.getItem('agentChatHistory');
-      if (saved) return JSON.parse(saved);
-    } catch (e) {
-      console.error(e);
-    }
-    return defaultMessages;
-  });
+  const [messages, setMessages] = useState<Message[]>([defaultMessage]);
+  const [histories, setHistories] = useState<ChatSession[]>([]);
+  const [viewingHistoryId, setViewingHistoryId] = useState<string | null>(null);
 
   useEffect(() => {
-    localStorage.setItem('agentChatHistory', JSON.stringify(messages));
-  }, [messages]);
+    const currentChatKey = `agentChat_${activeUser.id}`;
+    const historiesKey = `agentHistories_${activeUser.id}`;
+
+    try {
+      const savedChat = localStorage.getItem(currentChatKey);
+      if (savedChat) {
+        setMessages(JSON.parse(savedChat));
+      } else {
+        setMessages([{ ...defaultMessage, text: `Hello ${activeUser.name.split(' ')[0]}! I am your Debt Optimizer. How can I help you today?` }]);
+      }
+
+      const savedHistories = localStorage.getItem(historiesKey);
+      if (savedHistories) {
+        setHistories(JSON.parse(savedHistories));
+      } else {
+        setHistories([]);
+      }
+    } catch (e) {
+      console.error("Failed to load history", e);
+    }
+    setViewingHistoryId(null);
+  }, [activeUser.id]);
+
+  useEffect(() => {
+    if (viewingHistoryId === null && messages.length > 0) {
+      localStorage.setItem(`agentChat_${activeUser.id}`, JSON.stringify(messages));
+    }
+  }, [messages, activeUser.id, viewingHistoryId]);
+
+  useEffect(() => {
+    localStorage.setItem(`agentHistories_${activeUser.id}`, JSON.stringify(histories));
+  }, [histories, activeUser.id]);
 
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  // Scroll to bottom when messages update
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, activeAgent, isTyping]);
+  }, [messages, isTyping, viewingHistoryId]);
 
   const handleSend = async () => {
-    if (!input.trim()) return;
+    if (!input.trim() || viewingHistoryId) return; // Disallow sending if viewing history
     
     const userMessage: Message = { id: Date.now(), sender: 'user', text: input };
-    const conversation = [...messages[activeAgent], userMessage];
+    const conversation = [...messages, userMessage];
     
-    // Add user message to current agent's chat history
-    setMessages(prev => ({
-      ...prev,
-      [activeAgent]: conversation
-    }));
-    
+    setMessages(conversation);
     setInput('');
     setIsTyping(true);
 
-    // Call the real LLM Node backend
     try {
       const savedData = localStorage.getItem('cibilData');
-      
       let parsedCibil = null;
       if (savedData) {
-        try { 
-          parsedCibil = JSON.parse(savedData); 
-          // Cache bust: if old data doesn't have the Axis card, ignore it and use new fallback
-          if (parsedCibil.credit_cards && parsedCibil.credit_cards.length < 2) {
-            parsedCibil = null;
-          }
-        } catch (e) {}
-      }
-      
-      if (!parsedCibil) {
-        parsedCibil = {
-          cibil_score: 784,
-          risk_band: 'Low Risk',
-          active_loans: [
-            { lender: 'SBI Education Loan', original_principal: 3823500, outstanding_balance: 3250000, emi: 38400, interest_rate: 8.5, tenure_months: 180, percent_repaid: 15 },
-            { lender: 'HDFC Personal Loan', original_principal: 763600, outstanding_balance: 420000, emi: 14500, interest_rate: 11.2, tenure_months: 60, percent_repaid: 45 }
-          ],
-          credit_cards: [
-            { issuer: 'ICICI Coral Credit Card', limit: 200000, utilized: 45200, next_bill: '12th Oct' },
-            { issuer: 'Axis Bank Flipkart Card', limit: 150000, utilized: 12400, next_bill: '18th Oct' }
-          ]
-        };
-        // Save the updated complete profile back to storage so it persists
-        localStorage.setItem('cibilData', JSON.stringify(parsedCibil));
+        try { parsedCibil = JSON.parse(savedData); } catch (e) {}
       }
 
-      const savedSavings = localStorage.getItem('totalSavings');
-      
       const userData = {
-        creditProfile: parsedCibil,
-        totalSavingsAndInvestments: savedSavings ? parseInt(savedSavings) : 0
+        name: activeUser.name,
+        pan: activeUser.pan,
+        creditProfile: parsedCibil || "No specific profile data available."
       };
 
       const response = await fetch('/api/chat', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           messages: conversation,
-          agentType: activeAgent,
+          agentType: 'Optimizer',
           userData: userData
         })
       });
       
       const data = await response.json();
-      
       if (!response.ok) throw new Error(data.error || 'LLM Error');
 
       const aiMessage: Message = { id: Date.now() + 1, sender: 'ai', text: data.text };
-      
-      setMessages(prev => ({
-        ...prev,
-        [activeAgent]: [...prev[activeAgent], aiMessage]
-      }));
+      setMessages(prev => [...prev, aiMessage]);
     } catch (error) {
       console.error(error);
-      const errorMessage: Message = { id: Date.now() + 1, sender: 'ai', text: "Sorry, I am currently unable to reach the Groq Llama3 LLM API." };
-      setMessages(prev => ({
-        ...prev,
-        [activeAgent]: [...prev[activeAgent], errorMessage]
-      }));
+      const errorMessage: Message = { id: Date.now() + 1, sender: 'ai', text: "Sorry, I am currently unable to reach the LLM API." };
+      setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsTyping(false);
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      handleSend();
-    }
+    if (e.key === 'Enter') handleSend();
   };
-  
+
+  const handleSaveAndClear = () => {
+    if (messages.length <= 1) return; 
+    const newSession: ChatSession = {
+      id: Date.now().toString(),
+      date: new Date().toLocaleString(),
+      messages: [...messages]
+    };
+    setHistories(prev => [newSession, ...prev]);
+    const resetMessage = { ...defaultMessage, text: `Hello ${activeUser.name.split(' ')[0]}! Previous chat saved to history. How can I assist you further?` };
+    setMessages([resetMessage]);
+    setViewingHistoryId(null);
+  };
+
+  const activeMessages = viewingHistoryId 
+    ? histories.find(h => h.id === viewingHistoryId)?.messages || []
+    : messages;
+
   return (
     <div style={{ height: 'calc(100vh - 150px)', display: 'flex', gap: '24px' }}>
-      {/* Agent Selector */}
+      {/* Sidebar: Chat Histories */}
       <div className="glass-panel" style={{ width: '300px', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <div style={{ padding: '24px', borderBottom: '1px solid var(--glass-border)' }}>
-          <h3 style={{ fontSize: '1.2rem' }}>Specialized Agents</h3>
+          <h3 style={{ fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Clock size={20} color="var(--accent-primary)" />
+            Past Histories
+          </h3>
           <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '8px' }}>
-            Cloud-Native Orchestrated Team
+             Records for {activeUser.name}
           </p>
         </div>
         
-        <div style={{ display: 'flex', flexDirection: 'column', padding: '16px' }}>
-          <AgentCard 
-            name="Debt Optimizer" 
-            desc="Focus: Education Loans & EMI" 
-            active={activeAgent === 'Optimizer'} 
-            onClick={() => setActiveAgent('Optimizer')} 
-            color="var(--accent-primary)"
-          />
-          <AgentCard 
-            name="Savings Tracker" 
-            desc="Focus: PPF & Mutual Funds" 
-            active={activeAgent === 'Tracker'} 
-            onClick={() => setActiveAgent('Tracker')} 
-            color="var(--success)"
-          />
-          <AgentCard 
-            name="Wealth Builder" 
-            desc="Focus: NPS & Tax Planning" 
-            active={activeAgent === 'WealthBuilder'} 
-            onClick={() => setActiveAgent('WealthBuilder')} 
-            color="var(--accent-tertiary)"
-          />
+        <div style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <button 
+            className="btn btn-secondary" 
+            onClick={() => setViewingHistoryId(null)}
+            style={{ width: '100%', textAlign: 'left', display: 'flex', alignItems: 'center', gap: '8px', background: viewingHistoryId === null ? 'var(--accent-primary)' : '', color: viewingHistoryId === null ? '#fff' : '' }}
+          >
+            <MessageSquare size={16} /> Current Active Chat
+          </button>
+          
+          <hr style={{ border: 'none', borderTop: '1px solid var(--glass-border)', margin: '8px 0' }} />
+
+          {histories.length === 0 ? (
+            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', textAlign: 'center', padding: '16px 0' }}>No past histories saved.</div>
+          ) : (
+            histories.map(h => (
+              <div 
+                key={h.id}
+                onClick={() => setViewingHistoryId(h.id)}
+                style={{ 
+                  padding: '12px', 
+                  borderRadius: '8px', 
+                  cursor: 'pointer',
+                  border: '1px solid',
+                  borderColor: viewingHistoryId === h.id ? 'var(--accent-primary)' : 'var(--glass-border)',
+                  background: viewingHistoryId === h.id ? 'rgba(122, 162, 247, 0.1)' : 'transparent',
+                  transition: 'all 0.2s',
+                  fontSize: '0.85rem'
+                }}
+              >
+                <div style={{ fontWeight: 600, color: 'var(--text-main)', marginBottom: '4px' }}>Session {new Date(h.date).toLocaleDateString()}</div>
+                <div style={{ color: 'var(--text-muted)' }}>{new Date(h.date).toLocaleTimeString()}</div>
+              </div>
+            ))
+          )}
         </div>
       </div>
       
@@ -189,19 +195,28 @@ export default function AiAgents() {
         <div style={{ padding: '24px', borderBottom: '1px solid var(--glass-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <h3 style={{ fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{ width: 12, height: 12, borderRadius: '50%', background: activeAgent === 'Optimizer' ? 'var(--accent-primary)' : activeAgent === 'Tracker' ? 'var(--success)' : 'var(--accent-tertiary)', boxShadow: '0 0 10px currentColor' }} />
-              {activeAgent === 'Optimizer' ? 'Debt Optimizer Agent' : activeAgent === 'Tracker' ? 'Savings Tracker Agent' : 'Wealth Builder Agent'}
+              <div style={{ width: 12, height: 12, borderRadius: '50%', background: 'var(--accent-primary)', boxShadow: '0 0 10px currentColor' }} />
+              Debt Optimizer Agent
             </h3>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Connected via DPDP Encrypted Protocol</span>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Analyzing {activeUser.name}'s Profile</span>
           </div>
-          <div className="btn btn-secondary" style={{ fontSize: '0.8rem' }}>Confidence: 98.4% (XAI Active)</div>
+          
+          {!viewingHistoryId && (
+            <button className="btn btn-secondary" onClick={handleSaveAndClear} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem' }}>
+              <Save size={16} /> Save & Clear
+            </button>
+          )}
+          {viewingHistoryId && (
+            <div style={{ padding: '6px 12px', background: 'rgba(255,165,0,0.1)', color: 'orange', borderRadius: '8px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+               <Clock size={16} /> Viewing Read-Only History
+            </div>
+          )}
         </div>
         
         <div style={{ flex: 1, padding: '24px', overflowY: 'auto' }}>
            <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: '24px', fontSize: '0.85rem' }}>Session Started. State synchronized via AWS DynamoDB (Mumbai Region).</p>
            
-           {/* Dynamic Chat Messages */}
-           {messages[activeAgent].map((msg) => (
+           {activeMessages.map((msg) => (
              <div key={msg.id} style={{ display: 'flex', gap: '16px', marginBottom: '24px', flexDirection: msg.sender === 'user' ? 'row-reverse' : 'row' }}>
                <div style={{ 
                  width: 40, height: 40, borderRadius: '50%', flexShrink: 0,
@@ -210,7 +225,7 @@ export default function AiAgents() {
                  fontWeight: 'bold', fontSize: '0.9rem', overflow: 'hidden', border: msg.sender === 'user' ? '1px solid var(--glass-border)' : 'none'
                }}>
                  {msg.sender === 'user' ? (
-                   <img src={profilePic} onError={(e) => { e.currentTarget.src = '/me.png' }} alt="User" style={{ width: '100%', height: '100%', objectFit: 'cover', background: 'var(--bg-panel)' }} />
+                   <img src={activeUser.image} onError={(e) => { e.currentTarget.src = '/me.png' }} alt="User" style={{ width: '100%', height: '100%', objectFit: 'cover', background: 'var(--bg-panel)' }} />
                  ) : 'AI'}
                </div>
                
@@ -249,37 +264,19 @@ export default function AiAgents() {
           <div style={{ display: 'flex', gap: '16px' }}>
             <input 
               type="text" 
-              placeholder="Ask your agent..." 
+              placeholder={viewingHistoryId ? "Return to active chat to send a message..." : "Ask your Debt Optimizer..."} 
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              style={{ flex: 1, background: 'rgba(0,0,0,0.3)', border: '1px solid var(--glass-border)', borderRadius: '8px', padding: '12px 16px', color: 'white', outline: 'none', fontFamily: 'inherit' }} 
+              disabled={viewingHistoryId !== null}
+              style={{ flex: 1, background: 'rgba(0,0,0,0.3)', border: '1px solid var(--glass-border)', borderRadius: '8px', padding: '12px 16px', color: 'white', outline: 'none', fontFamily: 'inherit', opacity: viewingHistoryId ? 0.5 : 1 }} 
             />
-            <button className="btn btn-primary" onClick={handleSend} disabled={!input.trim() || isTyping} style={{ padding: '0 24px', opacity: (!input.trim() || isTyping) ? 0.5 : 1 }}>
+            <button className="btn btn-primary" onClick={handleSend} disabled={!input.trim() || isTyping || viewingHistoryId !== null} style={{ padding: '0 24px', opacity: (!input.trim() || isTyping || viewingHistoryId) ? 0.5 : 1 }}>
               Send Request
             </button>
           </div>
         </div>
       </div>
-    </div>
-  );
-}
-
-function AgentCard({ name, desc, active, onClick, color }: { name: string, desc: string, active: boolean, onClick: () => void, color: string }) {
-  return (
-    <div 
-      onClick={onClick}
-      style={{ 
-        padding: '16px', 
-        borderBottom: '1px solid var(--glass-border)', 
-        cursor: 'pointer',
-        background: active ? 'rgba(255,255,255,0.05)' : 'transparent',
-        borderLeft: active ? `4px solid ${color}` : '4px solid transparent',
-        transition: 'all 0.2s'
-      }}
-    >
-      <div style={{ fontWeight: 600, marginBottom: '4px' }}>{name}</div>
-      <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{desc}</div>
     </div>
   );
 }

@@ -1,16 +1,26 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ShieldCheck, UserCheck, Lock } from 'lucide-react';
+import { useUser } from '../context/UserContext';
 
 export default function KycVerification() {
+  const { activeUser } = useUser();
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    name: '',
-    pan: '',
+    name: activeUser.name,
+    pan: activeUser.pan,
     dob: '',
     mobile: ''
   });
   const [otp, setOtp] = useState('');
+
+  useEffect(() => {
+    setFormData(prev => ({
+      ...prev,
+      name: activeUser.name,
+      pan: activeUser.pan
+    }));
+  }, [activeUser]);
 
   const [errorMsg, setErrorMsg] = useState('');
 
