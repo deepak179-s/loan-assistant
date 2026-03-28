@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, MessageSquare, Bot, Settings, History, Shield, TrendingUp, Briefcase, CreditCard, Sun, Moon, DollarSign } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, Bot, Settings, History, Shield, TrendingUp, Briefcase, CreditCard, Sun, Moon } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import './index.css';
 
@@ -12,7 +12,6 @@ import CreditProfile from './pages/CreditProfile';
 import KycVerification from './pages/KycVerification';
 import SettingsConfig from './pages/Settings';
 import HumanCallback from './pages/HumanCallback';
-import PaymentPage from './pages/PaymentPage';
 import { useUser, USERS } from './context/UserContext';
 
 /* Sidebar Navigation Item */
@@ -74,7 +73,6 @@ export default function App() {
             <NavItem to="/credit" icon={CreditCard} label="Credit Profile" />
             <NavItem to="/simulator" icon={History} label="EMI Projections" />
             <NavItem to="/restructuring" icon={Briefcase} label="CSIS & Restructuring" />
-            <NavItem to="/payment" icon={DollarSign} label="Payments" />
             
             <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-muted)', margin: '32px 16px 8px' }}>
               Advisors
@@ -141,7 +139,6 @@ export default function App() {
               <Route path="/credit" element={<CreditProfile />} />
               <Route path="/settings" element={<SettingsConfig />} />
               <Route path="/advisor" element={<HumanCallback />} />
-              <Route path="/payment" element={<PaymentPage />} />
               <Route path="*" element={<div style={{ padding: '40px', textAlign: 'center' }}><h2>Coming Soon!</h2><p>This module is currently being built.</p></div>} />
             </Routes>
           </div>

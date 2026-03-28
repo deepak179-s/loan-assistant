@@ -1,6 +1,14 @@
 import { PhoneCall, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { useState } from 'react';
+import PaymentPage from './PaymentPage';
 
 export default function HumanCallback() {
+  const [showPayment, setShowPayment] = useState(false);
+
+  if (showPayment) {
+    return <PaymentPage onBack={() => setShowPayment(false)} />;
+  }
+
   return (
     <div className="animate-fade-in" style={{ padding: '24px' }}>
       <div style={{ maxWidth: '800px', margin: '0 auto' }}>
@@ -47,9 +55,9 @@ export default function HumanCallback() {
             </div>
           </div>
 
-          <a href="/payment" className="btn btn-primary" style={{ display: 'inline-block', padding: '16px 40px', fontSize: '1.2rem', borderRadius: '12px', boxShadow: '0 8px 32px rgba(122, 162, 247, 0.3)', textDecoration: 'none' }}>
+          <button onClick={() => setShowPayment(true)} className="btn btn-primary" style={{ display: 'inline-block', padding: '16px 40px', fontSize: '1.2rem', borderRadius: '12px', boxShadow: '0 8px 32px rgba(122, 162, 247, 0.3)', textDecoration: 'none', border: 'none', cursor: 'pointer' }}>
             Book Now
-          </a>
+          </button>
           
           <p style={{ marginTop: '24px', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
             Cancel anytime. 100% Secure Payment powered by Razorpay.
