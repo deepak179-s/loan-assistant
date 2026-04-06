@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useUser } from '../context/UserContext';
-import { Clock, MessageSquare, Save } from 'lucide-react';
+import { Clock, MessageSquare, Save, Trash2 } from 'lucide-react';
 import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { Link } from 'react-router-dom';
@@ -153,6 +153,14 @@ export default function AiAgents() {
     setViewingHistoryId(null);
   };
 
+  const handleDeleteHistory = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    setHistories(prev => prev.filter(h => h.id !== id));
+    if (viewingHistoryId === id) {
+      setViewingHistoryId(null);
+    }
+  };
+
   const activeMessages = viewingHistoryId 
     ? histories.find(h => h.id === viewingHistoryId)?.messages || []
     : messages;
@@ -197,11 +205,23 @@ export default function AiAgents() {
                   borderColor: viewingHistoryId === h.id ? 'var(--accent-primary)' : 'var(--glass-border)',
                   background: viewingHistoryId === h.id ? 'rgba(122, 162, 247, 0.1)' : 'transparent',
                   transition: 'all 0.2s',
-                  fontSize: '0.85rem'
+                  fontSize: '0.85rem',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center'
                 }}
               >
-                <div style={{ fontWeight: 600, color: 'var(--text-main)', marginBottom: '4px' }}>Session {new Date(h.date).toLocaleDateString()}</div>
-                <div style={{ color: 'var(--text-muted)' }}>{new Date(h.date).toLocaleTimeString()}</div>
+                <div>
+                  <div style={{ fontWeight: 600, color: 'var(--text-main)', marginBottom: '4px' }}>Session {new Date(h.date).toLocaleDateString()}</div>
+                  <div style={{ color: 'var(--text-muted)' }}>{new Date(h.date).toLocaleTimeString()}</div>
+                </div>
+                <button 
+                  onClick={(e) => handleDeleteHistory(e, h.id)}
+                  style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}
+                  title="Delete chat"
+                >
+                  <Trash2 size={16} />
+                </button>
               </div>
             ))
           )}
@@ -261,14 +281,16 @@ export default function AiAgents() {
                     </ReactMarkdown>
 
                     {msg.sender === 'ai' && msg.confidenceScore !== undefined && msg.confidenceScore < 80 && (
-                      <div style={{ marginTop: '16px', padding: '12px', background: 'rgba(255, 165, 0, 0.1)', border: '1px solid rgba(255,165,0,0.5)', borderRadius: '8px' }}>
-                        <h4 style={{ color: 'orange', margin: '0 0 8px 0', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          ⚠️ Low Confidence Detected ({msg.confidenceScore}%)
+                      <div style={{ marginTop: '16px', padding: '12px', background: msg.confidenceScore <= 30 ? 'rgba(255, 0, 0, 0.1)' : 'rgba(255, 165, 0, 0.1)', border: msg.confidenceScore <= 30 ? '1px solid red' : '1px solid rgba(255,165,0,0.5)', borderRadius: '8px' }}>
+                        <h4 style={{ color: msg.confidenceScore <= 30 ? 'red' : 'orange', margin: '0 0 8px 0', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          {msg.confidenceScore <= 30 ? `🚨 High Risk / Scam Detected (${msg.confidenceScore}%)` : `⚠️ Low Confidence Detected (${msg.confidenceScore}%)`}
                         </h4>
                         <p style={{ margin: '0 0 12px 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                          The multi-agent protocol verified this response, but anomaly detection flagged it as outside strict mathematical bounds. 
+                          {msg.confidenceScore <= 30 
+                            ? 'The multi-agent protocol flagged this interaction as a potential scam, fraud, or extreme mathematical impossibility.'
+                            : 'The multi-agent protocol verified this response, but anomaly detection flagged it as outside strict mathematical bounds.'}
                         </p>
-                        <Link to="/advisor" className="btn btn-secondary" style={{ textDecoration: 'none', display: 'inline-block', fontSize: '0.8rem', padding: '6px 12px', background: 'orange', color: 'black', fontWeight: 'bold' }}>
+                        <Link to="/advisor" className="btn btn-secondary" style={{ textDecoration: 'none', display: 'inline-block', fontSize: '0.8rem', padding: '6px 12px', background: msg.confidenceScore <= 30 ? 'red' : 'orange', color: msg.confidenceScore <= 30 ? 'white' : 'black', fontWeight: 'bold' }}>
                           Talk to Human Advisor
                         </Link>
                       </div>

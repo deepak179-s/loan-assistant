@@ -58,7 +58,7 @@ app.post('/api/kyc/request-otp', authenticateApiKey, (req, res) => {
 });
 
 app.post('/api/kyc/verify-otp', authenticateApiKey, (req, res) => {
-  const { mobile, otp } = req.body;
+  const { mobile, otp, name } = req.body;
 
   if (otpStorage.get(mobile) !== otp) {
     return res.status(400).json({ error: 'Invalid OTP' });
@@ -67,47 +67,65 @@ app.post('/api/kyc/verify-otp', authenticateApiKey, (req, res) => {
   // Clear OTP
   otpStorage.delete(mobile);
 
+  const lowerName = (name || '').toLowerCase();
+  let pan = 'DEEPAK';
+  if (lowerName.includes('sumit')) pan = 'SUMIT1234Y';
+  else if (lowerName.includes('kashish')) pan = 'KASHI1234J';
+  else if (lowerName.includes('tarun')) pan = 'TARUN1234S';
+  
+  let cibil_score = 784;
+  let risk_band = 'Low Risk';
+  let active_loans = [];
+  let credit_cards = [];
+
+  if (pan === 'SUMIT1234Y') {
+    cibil_score = 650;
+    risk_band = 'High Risk';
+    active_loans = [
+      { lender: 'Bajaj Finserv', original_principal: 500000, outstanding_balance: 450000, emi: 18000, interest_rate: 14.5, tenure_months: 36, percent_repaid: 10 }
+    ];
+    credit_cards = [
+      { issuer: 'SBI SimplyClick', limit: 100000, utilized: 90000, next_bill: '10th Oct' }
+    ];
+  } else if (pan === 'KASHI1234J') {
+    cibil_score = 810;
+    risk_band = 'Excellent';
+    active_loans = [
+      { lender: 'HDFC Education Loan', original_principal: 1500000, outstanding_balance: 1200000, emi: 18000, interest_rate: 9.5, tenure_months: 120, percent_repaid: 20 },
+      { lender: 'ICICI Personal Loan', original_principal: 500000, outstanding_balance: 400000, emi: 15000, interest_rate: 12.0, tenure_months: 48, percent_repaid: 20 }
+    ];
+    credit_cards = [
+      { issuer: 'HDFC Regalia', limit: 500000, utilized: 50000, next_bill: '5th Nov' }
+    ];
+  } else if (pan === 'TARUN1234S') {
+    cibil_score = 720;
+    risk_band = 'Medium Risk';
+    active_loans = [
+      { lender: 'SBI Home Loan', original_principal: 5000000, outstanding_balance: 4800000, emi: 45000, interest_rate: 8.7, tenure_months: 240, percent_repaid: 4 },
+      { lender: 'HDFC Car Loan', original_principal: 800000, outstanding_balance: 600000, emi: 15000, interest_rate: 9.5, tenure_months: 60, percent_repaid: 25 }
+    ];
+    credit_cards = [];
+  } else {
+    // Default (Deepak)
+    active_loans = [
+      { lender: 'SBI Education Loan', original_principal: 3823500, outstanding_balance: 3250000, emi: 38400, interest_rate: 8.5, tenure_months: 180, percent_repaid: 15 },
+      { lender: 'HDFC Personal Loan', original_principal: 763600, outstanding_balance: 420000, emi: 14500, interest_rate: 11.2, tenure_months: 60, percent_repaid: 45 }
+    ];
+    credit_cards = [
+      { issuer: 'ICICI Coral Credit Card', limit: 200000, utilized: 45200, next_bill: '12th Oct' },
+      { issuer: 'Axis Bank Flipkart Card', limit: 150000, utilized: 12400, next_bill: '18th Oct' }
+    ];
+  }
+
   // Return realistic mocked Credit Bureau JSON data
   res.json({
     status: 'success',
     message: 'Bureau Data Fetched Successfully',
     data: {
-      cibil_score: 784,
-      risk_band: 'Low Risk',
-      active_loans: [
-        {
-          lender: 'SBI Education Loan',
-          original_principal: 3823500,
-          outstanding_balance: 3250000,
-          emi: 38400,
-          interest_rate: 8.5,
-          tenure_months: 180,
-          percent_repaid: 15
-        },
-        {
-          lender: 'HDFC Personal Loan',
-          original_principal: 763600,
-          outstanding_balance: 420000,
-          emi: 14500,
-          interest_rate: 11.2,
-          tenure_months: 60,
-          percent_repaid: 45
-        }
-      ],
-      credit_cards: [
-        {
-          issuer: 'ICICI Coral Credit Card',
-          limit: 200000,
-          utilized: 45200,
-          next_bill: '12th Oct'
-        },
-        {
-          issuer: 'Axis Bank Flipkart Card',
-          limit: 150000,
-          utilized: 12400,
-          next_bill: '18th Oct'
-        }
-      ]
+      cibil_score,
+      risk_band,
+      active_loans,
+      credit_cards
     }
   });
 });
@@ -142,7 +160,7 @@ app.post('/api/chat', async (req, res) => {
     // ----------------------------------------------------
     // AGENT 1: THE STRATEGIST
     // ----------------------------------------------------
-    const strategistSystemPrompt = `You are the Lead Financial Strategist. Your goal is to analyze the user's query and their exact numerical financial profile to propose a debt repayment strategy. Do not hallucinate math. Use exact numbers from the profile. 
+    const strategistSystemPrompt = `You are the Lead Financial Strategist. Your goal is to analyze the user's query and their exact numerical financial profile to propose a debt repayment strategy. Do not hallucinate math. Use exact numbers from the profile to calculate savings accurately.
 ${profileContext}`;
 
     const history1 = [
@@ -152,7 +170,7 @@ ${profileContext}`;
 
     const strategistResponse = await groq.chat.completions.create({
       messages: history1,
-      model: "llama-3.1-8b-instant",
+      model: "llama-3.3-70b-versatile",
     });
 
     const strategistDraft = strategistResponse.choices[0]?.message?.content || "";
@@ -161,14 +179,15 @@ ${profileContext}`;
     // AGENT 2: THE MATHEMATICIAN / CRITIC (Anti-Hallucination)
     // ----------------------------------------------------
     const criticSystemPrompt = `You are the Expert Financial Critic. Review the Lead Strategist's proposed plan against the user's REAL financial data. 
-1. Check for any math hallucinations (e.g. referencing loans that don't exist, incorrect math).
-2. Verify that the advice makes sense. If it's a general question, just formalize the response.
-3. Provide a 'confidenceScore' between 0-100 indicating how certain you are. If the question is outside strict financial domains or anomalous, lower the score below 75. 100 means mathematically flawless.
+1. Check for math hallucinations. If the strategist claims saving millions/crores on a small loan, it's a hallucination. Set confidenceScore to 20.
+2. Verify that the advice makes sense.
+3. [CRITICAL SCAM DETECTOR]: If the user's prompt mentions a "lottery", "looter message", winning massive money from nowhere, guaranteed crypto returns, "spaceship", or ANY obvious internet scam/unverifiable windfall, or asks about accounts that DO NOT EXIST in their profile, you MUST set confidenceScore to 20 or lower! This forces human verification.
+4. Provide a 'confidenceScore' between 0-100. 100 means mathematically flawless regarding user's real loans. 
 Your ONLY output must be a raw JSON object with this exact structure:
 {
-  "confidenceScore": 95,
-  "reasoning": "Brief explanation of verification.",
-  "finalAdvice": "The actual detailed advice meant for the user. Fix the formatting."
+  "confidenceScore": 20,
+  "reasoning": "Explain why this is verified or flagged as an anomaly/scam.",
+  "finalAdvice": "The actual advice meant for the user. (e.g. telling them it's a scam/anomaly)"
 }
 NO OTHER TEXT ALLOWED. JUST JSON.
 ${profileContext}`;
@@ -181,7 +200,7 @@ ${profileContext}`;
 
     const criticResponse = await groq.chat.completions.create({
       messages: criticHistory,
-      model: "llama-3.1-8b-instant",
+      model: "llama-3.3-70b-versatile",
       response_format: { type: "json_object" }
     });
 

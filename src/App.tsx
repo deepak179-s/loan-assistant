@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, MessageSquare, Bot, Settings, History, Shield, TrendingUp, Briefcase, CreditCard, Sun, Moon, Menu, X } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, Bot, History, Shield, TrendingUp, Briefcase, CreditCard, Sun, Moon, Menu, X } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import './index.css';
 
@@ -10,7 +10,6 @@ import Simulator from './pages/Simulator';
 import RestructuringTracker from './pages/RestructuringTracker';
 import CreditProfile from './pages/CreditProfile';
 import KycVerification from './pages/KycVerification';
-import SettingsConfig from './pages/Settings';
 import HumanCallback from './pages/HumanCallback';
 import { useUser, USERS } from './context/UserContext';
 
@@ -101,7 +100,7 @@ export default function App() {
             <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-muted)', margin: '32px 16px 8px' }}>
               System
             </div>
-            <NavItem to="/settings" icon={Settings} label="Settings" />
+            {/* Settings Removed per request */}
             
             <div className="glass-panel" style={{ marginTop: 'auto', margin: '16px', padding: '16px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '12px' }}>
               <Shield size={24} color="var(--success)" />
@@ -161,7 +160,6 @@ export default function App() {
               <Route path="/simulator" element={<Simulator />} />
               <Route path="/restructuring" element={<RestructuringTracker />} />
               <Route path="/credit" element={<CreditProfile />} />
-              <Route path="/settings" element={<SettingsConfig />} />
               <Route path="/advisor" element={<HumanCallback />} />
               <Route path="*" element={<div style={{ padding: '40px', textAlign: 'center' }}><h2>Coming Soon!</h2><p>This module is currently being built.</p></div>} />
             </Routes>

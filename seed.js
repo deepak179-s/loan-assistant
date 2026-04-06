@@ -44,7 +44,10 @@ const users = [
     id: 'kashish', name: 'Kashish Jaiswal', pan: 'KASHI1234J', image: '/kashish.jpeg', title: 'B.Des · Wealth Builder',
     profile: {
       cibil_score: 810, risk_band: 'Excellent',
-      active_loans: [],
+      active_loans: [
+        { lender: 'HDFC Education Loan', original_principal: 1500000, outstanding_balance: 1200000, emi: 18000, interest_rate: 9.5, tenure_months: 120, percent_repaid: 20 },
+        { lender: 'ICICI Personal Loan', original_principal: 500000, outstanding_balance: 400000, emi: 15000, interest_rate: 12.0, tenure_months: 48, percent_repaid: 20 }
+      ],
       credit_cards: [
         { issuer: 'HDFC Regalia', limit: 500000, utilized: 50000, next_bill: '5th Nov' }
       ]

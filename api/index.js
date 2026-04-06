@@ -85,7 +85,10 @@ app.post('/api/kyc/verify-otp', authenticateApiKey, (req, res) => {
   } else if (pan === 'KASHI1234J') {
     cibil_score = 810;
     risk_band = 'Excellent';
-    active_loans = []; // Wealth Builder, no loans
+    active_loans = [
+      { lender: 'HDFC Education Loan', original_principal: 1500000, outstanding_balance: 1200000, emi: 18000, interest_rate: 9.5, tenure_months: 120, percent_repaid: 20 },
+      { lender: 'ICICI Personal Loan', original_principal: 500000, outstanding_balance: 400000, emi: 15000, interest_rate: 12.0, tenure_months: 48, percent_repaid: 20 }
+    ]; // Added per request
     credit_cards = [
       { issuer: 'HDFC Regalia', limit: 500000, utilized: 50000, next_bill: '5th Nov' }
     ];
@@ -154,7 +157,7 @@ app.post('/api/chat', async (req, res) => {
     // ----------------------------------------------------
     // AGENT 1: THE STRATEGIST
     // ----------------------------------------------------
-    const strategistSystemPrompt = `You are the Lead Financial Strategist. Your goal is to analyze the user's query and their exact numerical financial profile to propose a debt repayment strategy. Do not hallucinate math. Use exact numbers from the profile. 
+    const strategistSystemPrompt = `You are the Lead Financial Strategist. Your goal is to analyze the user's query and their exact numerical financial profile to propose a debt repayment strategy. Do not hallucinate math. Use exact numbers from the profile to calculate savings accurately.
 ${profileContext}`;
 
     const history1 = [
@@ -164,7 +167,7 @@ ${profileContext}`;
 
     const strategistResponse = await groq.chat.completions.create({
       messages: history1,
-      model: "llama-3.1-8b-instant",
+      model: "llama-3.3-70b-versatile",
     });
 
     const strategistDraft = strategistResponse.choices[0]?.message?.content || "";
@@ -173,14 +176,15 @@ ${profileContext}`;
     // AGENT 2: THE MATHEMATICIAN / CRITIC (Anti-Hallucination)
     // ----------------------------------------------------
     const criticSystemPrompt = `You are the Expert Financial Critic. Review the Lead Strategist's proposed plan against the user's REAL financial data. 
-1. Check for any math hallucinations (e.g. referencing loans that don't exist, incorrect math).
-2. Verify that the advice makes sense. If it's a general question, just formalize the response.
-3. Provide a 'confidenceScore' between 0-100 indicating how certain you are. If the question is outside strict financial domains or anomalous, lower the score below 75. 100 means mathematically flawless.
+1. Check for math hallucinations. If the strategist claims saving millions/crores on a small loan, it's a hallucination. Set confidenceScore to 20.
+2. Verify that the advice makes sense.
+3. [CRITICAL SCAM DETECTOR]: If the user's prompt mentions a "lottery", "looter message", winning massive money from nowhere, guaranteed crypto returns, "spaceship", or ANY obvious internet scam/unverifiable windfall, or asks about accounts that DO NOT EXIST in their profile, you MUST set confidenceScore to 20 or lower! This forces human verification.
+4. Provide a 'confidenceScore' between 0-100. 100 means mathematically flawless regarding user's real loans. 
 Your ONLY output must be a raw JSON object with this exact structure:
 {
-  "confidenceScore": 95,
-  "reasoning": "Brief explanation of verification.",
-  "finalAdvice": "The actual detailed advice meant for the user. Fix the formatting."
+  "confidenceScore": 20,
+  "reasoning": "Explain why this is verified or flagged as an anomaly/scam.",
+  "finalAdvice": "The actual advice meant for the user. (e.g. telling them it's a scam/anomaly)"
 }
 NO OTHER TEXT ALLOWED. JUST JSON.
 ${profileContext}`;
@@ -193,7 +197,7 @@ ${profileContext}`;
 
     const criticResponse = await groq.chat.completions.create({
       messages: criticHistory,
-      model: "llama-3.1-8b-instant",
+      model: "llama-3.3-70b-versatile",
       response_format: { type: "json_object" }
     });
 
