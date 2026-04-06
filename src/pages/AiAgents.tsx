@@ -5,11 +5,13 @@ import { useUser } from '../context/UserContext';
 import { Clock, MessageSquare, Save } from 'lucide-react';
 import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../config/firebase';
+import { Link } from 'react-router-dom';
 
 interface Message {
   id: number;
   sender: 'user' | 'ai';
   text: string;
+  confidenceScore?: number;
 }
 
 interface ChatSession {
@@ -117,7 +119,10 @@ export default function AiAgents() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'LLM Error');
 
-      const aiMessage: Message = { id: Date.now() + 1, sender: 'ai', text: data.text };
+      const textOutput = data.finalAdvice || data.text || "Sorry, I couldn't process this.";
+      const confidence = data.confidenceScore;
+
+      const aiMessage: Message = { id: Date.now() + 1, sender: 'ai', text: textOutput, confidenceScore: confidence };
       setMessages(prev => [...prev, aiMessage]);
     } catch (error) {
       console.error(error);
@@ -250,25 +255,44 @@ export default function AiAgents() {
                  maxWidth: '85%',
                  border: msg.sender === 'user' ? '1px solid rgba(122, 162, 247, 0.2)' : 'none'
                }}>
-                 <div className="markdown-body">
-                   <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                     {msg.text.replace(/```markdown\n?/g, '').replace(/```\n?/g, '')}
-                   </ReactMarkdown>
-                 </div>
+                  <div className="markdown-body">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {msg.text.replace(/```markdown\n?/g, '').replace(/```\n?/g, '')}
+                    </ReactMarkdown>
+
+                    {msg.sender === 'ai' && msg.confidenceScore !== undefined && msg.confidenceScore < 80 && (
+                      <div style={{ marginTop: '16px', padding: '12px', background: 'rgba(255, 165, 0, 0.1)', border: '1px solid rgba(255,165,0,0.5)', borderRadius: '8px' }}>
+                        <h4 style={{ color: 'orange', margin: '0 0 8px 0', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          ⚠️ Low Confidence Detected ({msg.confidenceScore}%)
+                        </h4>
+                        <p style={{ margin: '0 0 12px 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                          The multi-agent protocol verified this response, but anomaly detection flagged it as outside strict mathematical bounds. 
+                        </p>
+                        <Link to="/advisor" className="btn btn-secondary" style={{ textDecoration: 'none', display: 'inline-block', fontSize: '0.8rem', padding: '6px 12px', background: 'orange', color: 'black', fontWeight: 'bold' }}>
+                          Talk to Human Advisor
+                        </Link>
+                      </div>
+                    )}
+                  </div>
                </div>
              </div>
            ))}
 
-           {isTyping && (
-             <div style={{ display: 'flex', gap: '16px', marginBottom: '24px' }}>
-               <div style={{ width: 40, height: 40, borderRadius: '50%', flexShrink: 0, background: 'var(--glass-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem' }}>AI</div>
-               <div style={{ background: 'rgba(255,255,255,0.05)', padding: '16px', borderRadius: '12px', borderTopLeftRadius: '0', display: 'flex', gap: '4px', alignItems: 'center' }}>
-                 <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--text-muted)', animation: 'pulse-glow 1s infinite' }} />
-                 <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--text-muted)', animation: 'pulse-glow 1s infinite 0.2s' }} />
-                 <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--text-muted)', animation: 'pulse-glow 1s infinite 0.4s' }} />
-               </div>
-             </div>
-           )}
+            {isTyping && (
+              <div style={{ display: 'flex', gap: '16px', marginBottom: '24px' }}>
+                <div style={{ width: 40, height: 40, borderRadius: '50%', flexShrink: 0, background: 'var(--glass-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem' }}>AI</div>
+                <div style={{ background: 'rgba(255,255,255,0.05)', padding: '16px', borderRadius: '12px', borderTopLeftRadius: '0', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                    The Strategist and Critic agents are verifying your optimal plan...
+                  </div>
+                  <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent-primary)', animation: 'pulse-glow 1s infinite' }} />
+                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent-primary)', animation: 'pulse-glow 1s infinite 0.2s' }} />
+                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent-primary)', animation: 'pulse-glow 1s infinite 0.4s' }} />
+                  </div>
+                </div>
+              </div>
+            )}
 
            <div ref={chatEndRef} />
         </div>

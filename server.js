@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import Groq from 'groq-sdk';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import fs from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -111,46 +112,103 @@ app.post('/api/kyc/verify-otp', authenticateApiKey, (req, res) => {
   });
 });
 
+// Helper to log LoRA fine-tuning format
+const logToLoRADataset = (systemPrompt, userQuery, aiResponse) => {
+  const logEntry = {
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userQuery },
+      { role: "assistant", content: aiResponse }
+    ]
+  };
+  try {
+    fs.appendFileSync(path.join(__dirname, 'lora-training-data.jsonl'), JSON.stringify(logEntry) + '\n');
+  } catch (err) {
+    console.error("Failed to write to LoRA dataset", err);
+  }
+};
+
 app.post('/api/chat', async (req, res) => {
   const { messages, agentType, userData } = req.body;
   
-  if (!messages || !agentType) {
-    return res.status(400).json({ error: 'Missing messages or agentType' });
+  if (!messages) {
+    return res.status(400).json({ error: 'Missing messages' });
   }
 
   try {
-    let systemInstruction = "";
-    if (agentType === 'Optimizer') {
-      systemInstruction = "You are the Debt Optimizer Agent. Your expertise is in Indian Education Loans, personal loans, EMI calculations, CSIS Subsidy, Section 80E tax deductions, and RBI repo rates. Be concise, act like a highly analytical AI core, and prioritize minimizing loan interest. Use the provided [CONFIDENTIAL CONTEXT] to give specific, numeric advice if available. Always respond in plain text or simple markdown.";
-    } else if (agentType === 'Tracker') {
-      systemInstruction = "You are the Savings Tracker Agent. Your expertise is in Indian investments like Public Provident Fund (PPF), SIPs, mutual funds, and fixed deposits. Be encouraging, act like a highly analytical AI core, and prioritize long-term compound interest. Use the provided [CONFIDENTIAL CONTEXT] to give specific, numeric advice if available. Always respond in plain text or simple markdown.";
-    } else if (agentType === 'WealthBuilder') {
-      systemInstruction = "You are the Wealth Builder Agent. Your expertise is in macro-wealth strategies for Indians, including the National Pension System (NPS), ELSS tax-saving funds, and CIBIL score optimization. Be strategic, act like a highly analytical AI core, and balance debt repayment with wealth accumulation. Use the provided [CONFIDENTIAL CONTEXT] to give specific, numeric advice if available. Always respond in plain text or simple markdown.";
-    }
+    const userMessage = messages[messages.length - 1].text;
+    const profileContext = userData ? `[CONFIDENTIAL CONTEXT] User Profile: ${JSON.stringify(userData, null, 2)}` : "No specific profile data available.";
 
-    systemInstruction += "\n\n[CRITICAL CONSTRAINT]: Be EXTREMELY concise and direct. ONLY answer the exact question asked by the user. Do NOT volunteer extra information, unprompted calculations, long-winded explanations, or formulas unless the user explicitly requests them. Give them exactly what they asked for and nothing more. NEVER wrap your response in ```markdown or ``` code blocks.";
+    // ----------------------------------------------------
+    // AGENT 1: THE STRATEGIST
+    // ----------------------------------------------------
+    const strategistSystemPrompt = `You are the Lead Financial Strategist. Your goal is to analyze the user's query and their exact numerical financial profile to propose a debt repayment strategy. Do not hallucinate math. Use exact numbers from the profile. 
+${profileContext}`;
 
-    if (userData) {
-      systemInstruction += `\n\n[CONFIDENTIAL CONTEXT]: You have verified DPDP-compliant access to the user's live financial data. Use this data EXACTLY when answering their questions so you give highly personalized numeric advice. The user's live profile data is:\n${JSON.stringify(userData, null, 2)}`;
-    }
+    const history1 = [
+        { role: 'system', content: strategistSystemPrompt },
+        { role: 'user', content: userMessage }
+    ];
 
-    // Format history for Groq
-    const formattedHistory = messages.slice(1).map(msg => ({
-      role: msg.sender === 'user' ? 'user' : 'assistant',
-      content: msg.text
-    }));
-    
-    // Add system instruction at the beginning
-    formattedHistory.unshift({ role: 'system', content: systemInstruction });
-
-    const chatCompletion = await groq.chat.completions.create({
-      messages: formattedHistory,
-      model: "llama-3.1-8b-instant", 
+    const strategistResponse = await groq.chat.completions.create({
+      messages: history1,
+      model: "llama-3.1-8b-instant",
     });
 
-    const responseText = chatCompletion.choices[0]?.message?.content || "";
+    const strategistDraft = strategistResponse.choices[0]?.message?.content || "";
 
-    res.json({ text: responseText });
+    // ----------------------------------------------------
+    // AGENT 2: THE MATHEMATICIAN / CRITIC (Anti-Hallucination)
+    // ----------------------------------------------------
+    const criticSystemPrompt = `You are the Expert Financial Critic. Review the Lead Strategist's proposed plan against the user's REAL financial data. 
+1. Check for any math hallucinations (e.g. referencing loans that don't exist, incorrect math).
+2. Verify that the advice makes sense. If it's a general question, just formalize the response.
+3. Provide a 'confidenceScore' between 0-100 indicating how certain you are. If the question is outside strict financial domains or anomalous, lower the score below 75. 100 means mathematically flawless.
+Your ONLY output must be a raw JSON object with this exact structure:
+{
+  "confidenceScore": 95,
+  "reasoning": "Brief explanation of verification.",
+  "finalAdvice": "The actual detailed advice meant for the user. Fix the formatting."
+}
+NO OTHER TEXT ALLOWED. JUST JSON.
+${profileContext}`;
+
+    const criticHistory = [
+      { role: 'system', content: criticSystemPrompt },
+      { role: 'assistant', content: `Strategist's Draft: ${strategistDraft}` },
+      { role: 'user', content: `Review the draft and finalize the JSON output for the original query: "${userMessage}"` }
+    ];
+
+    const criticResponse = await groq.chat.completions.create({
+      messages: criticHistory,
+      model: "llama-3.1-8b-instant",
+      response_format: { type: "json_object" }
+    });
+
+    let criticJsonText = criticResponse.choices[0]?.message?.content || "{}";
+    let finalResult = {};
+
+    try {
+      finalResult = JSON.parse(criticJsonText);
+    } catch(e) {
+      console.error("Failed to parse Critic JSON", e);
+      finalResult = {
+        confidenceScore: 50,
+        reasoning: "Failed to parse rigorous verification logic.",
+        finalAdvice: strategistDraft
+      };
+    }
+
+    // Save strictly formatted structural output for LoRA Fine-Tuning dataset IF confidence is high
+    if (finalResult.confidenceScore && finalResult.confidenceScore >= 80) {
+       logToLoRADataset(
+         "You are an expert debt optimizer. Use strict numerical accuracy.", 
+         `Current Data: ${profileContext}. Query: ${userMessage}`,
+         finalResult.finalAdvice
+       );
+    }
+
+    res.json(finalResult);
   } catch (error) {
     console.error("LLM Error:", error);
     res.status(500).json({ error: error.message || 'AI Processing Error' });
