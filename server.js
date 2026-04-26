@@ -11,10 +11,7 @@ const __dirname = path.dirname(__filename);
 
 dotenv.config();
 
-const groq = new Groq({ 
-  apiKey: process.env.OPENROUTER_API_KEY || process.env.GROQ_API_KEY,
-  baseURL: "https://openrouter.ai/api/v1"
-});
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -173,7 +170,7 @@ ${profileContext}`;
 
     const strategistResponse = await groq.chat.completions.create({
       messages: history1,
-      model: "openai/gpt-oss-120b",
+      model: "llama-3.3-70b-versatile",
     });
 
     const strategistDraft = strategistResponse.choices[0]?.message?.content || "";
@@ -203,7 +200,7 @@ ${profileContext}`;
 
     const criticResponse = await groq.chat.completions.create({
       messages: criticHistory,
-      model: "openai/gpt-oss-120b",
+      model: "llama-3.3-70b-versatile",
       response_format: { type: "json_object" }
     });
 
