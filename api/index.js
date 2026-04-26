@@ -179,7 +179,8 @@ ${profileContext}`;
 1. Check for math hallucinations. If the strategist claims saving millions/crores on a small loan, it's a hallucination. Set confidenceScore to 20.
 2. Verify that the advice makes sense.
 3. [CRITICAL SCAM DETECTOR]: If the user's prompt mentions a "lottery", "looter message", winning massive money from nowhere, guaranteed crypto returns, "spaceship", or ANY obvious internet scam/unverifiable windfall, or asks about accounts that DO NOT EXIST in their profile, you MUST set confidenceScore to 20 or lower! This forces human verification.
-4. Provide a 'confidenceScore' between 0-100. 100 means mathematically flawless regarding user's real loans. 
+4. IMPORTANT: If the user's prompt is a simple greeting like "hi", "hello", "hey", etc., DO NOT flag it as a scam. Set confidenceScore to 100 and return a friendly greeting as the finalAdvice.
+5. Provide a 'confidenceScore' between 0-100. 100 means mathematically flawless regarding user's real loans (or a simple verified greeting). 
 Your ONLY output must be a raw JSON object with this exact structure:
 {
   "confidenceScore": 20,
