@@ -95,15 +95,17 @@ export default function KycVerification() {
   return (
     <div className="animate-fade-in" style={{ maxWidth: '600px', margin: '0 auto', padding: '40px 0' }}>
       <div style={{ textAlign: 'center', marginBottom: '40px' }}>
-        <h1 className="text-gradient" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px' }}>
-          <ShieldCheck size={32} />
-          Sync Real CIBIL
-        </h1>
-        <p style={{ color: 'var(--text-muted)' }}>Securely fetch your credit profile from the bureau using DPDP compliant protocols.</p>
+        <div className="page-header" style={{ marginBottom: 0 }}>
+          <h1 style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginBottom: 8 }}>
+            <ShieldCheck size={32} />
+            Sync Real CIBIL
+          </h1>
+          <p>Securely fetch your credit profile from the bureau using DPDP compliant protocols.</p>
+        </div>
       </div>
 
       {errorMsg && (
-        <div style={{ background: 'rgba(247, 118, 142, 0.1)', color: 'var(--danger)', padding: '16px', borderRadius: '12px', marginBottom: '24px', textAlign: 'center', border: '1px solid var(--danger)' }}>
+        <div style={{ background: 'var(--rose-glow)', color: 'var(--rose-bright)', padding: '16px', borderRadius: '12px', marginBottom: '24px', textAlign: 'center', border: '1px solid var(--rose)' }}>
           {errorMsg}
         </div>
       )}
@@ -111,19 +113,19 @@ export default function KycVerification() {
       {/* Invisible reCAPTCHA container for Firebase */}
       <div id="recaptcha-container"></div>
 
-      <div className="glass-panel" style={{ padding: '32px' }}>
+      <div className="card card-pad">
         {step === 1 && (
            <form onSubmit={handleRequestOtp} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '8px', color: 'var(--text-muted)' }}>Full Name (As per PAN)</label>
+                <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '8px', color: 'var(--text-secondary)' }}>Full Name (As per PAN)</label>
                 <div style={{ position: 'relative' }}>
-                  <UserCheck size={18} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                  <UserCheck size={18} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
                   <input 
                     type="text" 
                     required 
                     value={formData.name}
                     onChange={(e) => setFormData({...formData, name: e.target.value})}
-                    style={{ width: '100%', padding: '12px 16px 12px 48px', background: 'var(--bg-panel)', border: '1px solid var(--glass-border)', borderRadius: '8px', color: 'white' }} 
+                    style={{ width: '100%', padding: '12px 16px 12px 48px', background: 'var(--bg-surface)', border: '1px solid var(--glass-border)', borderRadius: '8px', color: 'var(--text-primary)' }} 
                     placeholder="E.g. Deepak Kumar" 
                   />
                 </div>
@@ -131,36 +133,36 @@ export default function KycVerification() {
               
               <div className="form-grid-2">
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '8px', color: 'var(--text-muted)' }}>PAN Number</label>
+                  <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '8px', color: 'var(--text-secondary)' }}>PAN Number</label>
                   <input 
                     type="text" 
                     required 
                     value={formData.pan}
                     onChange={(e) => setFormData({...formData, pan: e.target.value})}
-                    style={{ width: '100%', padding: '12px 16px', background: 'var(--bg-panel)', border: '1px solid var(--glass-border)', borderRadius: '8px', color: 'white', textTransform: 'uppercase' }} 
+                    style={{ width: '100%', padding: '12px 16px', background: 'var(--bg-surface)', border: '1px solid var(--glass-border)', borderRadius: '8px', color: 'var(--text-primary)', textTransform: 'uppercase' }} 
                     placeholder="ABCDE1234F" 
                   />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '8px', color: 'var(--text-muted)' }}>Date of Birth</label>
+                  <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '8px', color: 'var(--text-secondary)' }}>Date of Birth</label>
                   <input 
                     type="date" 
                     required 
                     value={formData.dob}
                     onChange={(e) => setFormData({...formData, dob: e.target.value})}
-                    style={{ width: '100%', padding: '12px 16px', background: 'var(--bg-panel)', border: '1px solid var(--glass-border)', borderRadius: '8px', color: 'white', colorScheme: 'dark' }} 
+                    style={{ width: '100%', padding: '12px 16px', background: 'var(--bg-surface)', border: '1px solid var(--glass-border)', borderRadius: '8px', color: 'var(--text-primary)', colorScheme: 'dark' }} 
                   />
                 </div>
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '8px', color: 'var(--text-muted)' }}>Mobile Number (Linked to Aadhaar/Firebase)</label>
+                <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '8px', color: 'var(--text-secondary)' }}>Mobile Number (Linked to Aadhaar/Firebase)</label>
                 <input 
                   type="tel" 
                   required 
                   value={formData.mobile}
                   onChange={(e) => setFormData({...formData, mobile: e.target.value})}
-                  style={{ width: '100%', padding: '12px 16px', background: 'var(--bg-panel)', border: '1px solid var(--glass-border)', borderRadius: '8px', color: 'white' }} 
+                  style={{ width: '100%', padding: '12px 16px', background: 'var(--bg-surface)', border: '1px solid var(--glass-border)', borderRadius: '8px', color: 'var(--text-primary)' }} 
                   placeholder="Enter 10-digit mobile number" 
                 />
               </div>
@@ -173,9 +175,9 @@ export default function KycVerification() {
 
         {step === 2 && (
           <form onSubmit={handleVerifyOtp} style={{ display: 'flex', flexDirection: 'column', gap: '20px', textAlign: 'center' }}>
-            <Lock size={48} color="var(--accent-primary)" style={{ margin: '0 auto' }} />
+            <Lock size={48} color="var(--electric-bright)" style={{ margin: '0 auto' }} />
             <h3 style={{ fontSize: '1.2rem' }}>Enter OTP sent to +91 {formData.mobile}</h3>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Powered by Firebase Authentication</p>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Powered by Firebase Authentication</p>
             
             <input 
               type="text" 
@@ -183,7 +185,7 @@ export default function KycVerification() {
               maxLength={6}
               value={otp}
               onChange={(e) => setOtp(e.target.value)}
-              style={{ width: '100%', padding: '16px', background: 'var(--bg-panel)', border: '1px solid var(--accent-primary)', borderRadius: '8px', color: 'white', fontSize: '1.5rem', textAlign: 'center', letterSpacing: '4px' }} 
+              style={{ width: '100%', padding: '16px', background: 'var(--bg-surface)', border: '1px solid var(--electric-bright)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '1.5rem', textAlign: 'center', letterSpacing: '4px' }} 
               placeholder="••••••" 
             />
             
@@ -195,11 +197,11 @@ export default function KycVerification() {
 
         {step === 3 && (
           <div style={{ textAlign: 'center', padding: '20px 0' }}>
-            <div style={{ width: 80, height: 80, background: 'rgba(158, 206, 106, 0.2)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
-               <ShieldCheck size={40} color="var(--success)" />
+            <div style={{ width: 80, height: 80, background: 'var(--emerald-glow)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
+               <ShieldCheck size={40} color="var(--emerald-bright)" />
             </div>
-            <h2 style={{ color: 'var(--success)', marginBottom: '16px' }}>Network Sync Successful</h2>
-            <p style={{ color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: '32px' }}>
+            <h2 style={{ color: 'var(--emerald-bright)', marginBottom: '16px' }}>Network Sync Successful</h2>
+            <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '32px' }}>
               Your credit profile has been securely imported from the realtime Firebase network. The AI Debt Optimizer has been granted temporary access to analyze your portfolio.
             </p>
             <a href="/credit" className="btn btn-primary" style={{ textDecoration: 'none', display: 'inline-block' }}>View Credit Dashboard</a>
