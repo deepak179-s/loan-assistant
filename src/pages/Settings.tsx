@@ -37,58 +37,60 @@ export default function Settings() {
 
   return (
     <div>
-      <h1 className="text-gradient" style={{ marginBottom: '8px' }}>User Configurations</h1>
-      <p style={{ color: 'var(--text-muted)', marginBottom: '32px' }}>Manage your profile data, local avatars, and track your Net Worth dynamically.</p>
+      <div className="page-header" style={{ marginBottom: 32 }}>
+        <h1 style={{ marginBottom: '8px' }}>User Configurations</h1>
+        <p>Manage your profile data, local avatars, and track your Net Worth dynamically.</p>
+      </div>
 
       {/* Main Settings Area */}
       <div className="grid-2">
         
         {/* Left Column: API & Privacy Context */}
-        <div className="glass-panel" style={{ padding: '24px' }}>
+        <div className="card card-pad">
           <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px' }}>
-            <Camera color="var(--accent-primary)" size={20} />
+            <Camera color="var(--electric-bright)" size={20} />
             Avatar Settings
           </h3>
           
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
-            <img 
+              <img 
               src={profilePic} 
               alt="Preview" 
-              style={{ width: 120, height: 120, borderRadius: '50%', objectFit: 'cover', border: '4px solid var(--glass-border)', background: 'var(--bg-panel)' }} 
+              style={{ width: 120, height: 120, borderRadius: '50%', objectFit: 'cover', border: '4px solid var(--glass-border)', background: 'var(--bg-raised)' }} 
               onError={(e) => { e.currentTarget.src = '/me.png' }}
             />
             
             <div style={{ width: '100%' }}>
-              <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '8px' }}>Profile Image URL (Local or Web)</label>
+              <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '8px' }}>Profile Image URL (Local or Web)</label>
               <input 
                 type="text" 
                 value={profilePic} 
                 onChange={(e) => setProfilePic(e.target.value)}
                 placeholder="/me.png"
-                style={{ width: '100%', background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', padding: '12px 16px', borderRadius: '8px', color: 'var(--text-main)', fontSize: '1rem', outline: 'none' }} 
+                style={{ width: '100%', background: 'var(--bg-surface)', border: '1px solid var(--glass-border)', padding: '12px 16px', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '1rem', outline: 'none' }} 
               />
             </div>
           </div>
         </div>
 
         {/* Financial Settings */}
-        <div className="glass-panel" style={{ padding: '24px' }}>
+        <div className="card card-pad">
           <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px' }}>
-            <Wallet color="var(--success)" size={20} />
+            <Wallet color="var(--emerald-bright)" size={20} />
             Financial Declarations
           </h3>
 
           <div style={{ marginBottom: '24px' }}>
-            <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '8px' }}>Total Cash & Mutual Fund Assets (₹)</label>
+            <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '8px' }}>Total Cash & Mutual Fund Assets (₹)</label>
             <input 
               type="number" 
               value={savings} 
               onChange={(e) => setSavings(parseInt(e.target.value) || 0)}
-              style={{ width: '100%', background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', padding: '12px 16px', borderRadius: '8px', color: 'var(--text-main)', fontSize: '1rem', outline: 'none' }} 
+              style={{ width: '100%', background: 'var(--bg-surface)', border: '1px solid var(--glass-border)', padding: '12px 16px', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '1rem', outline: 'none' }} 
             />
           </div>
 
-          <div style={{ background: 'var(--gradient-primary)', borderRadius: '12px', padding: '24px', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ background: 'var(--electric)', borderRadius: '12px', padding: '24px', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
               <div style={{ fontSize: '0.85rem', opacity: 0.9, marginBottom: '4px' }}>Live Net Worth</div>
               <div style={{ fontSize: '2rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -99,7 +101,7 @@ export default function Settings() {
             <TrendingUp size={48} opacity={0.3} />
           </div>
           
-          <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '12px', display: 'flex', justifyContent: 'space-between' }}>
+          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '12px', display: 'flex', justifyContent: 'space-between' }}>
             <span>Auto-Calculated Verified Debt: ₹{outstandingDebt.toLocaleString('en-IN')}</span>
             <span>Assets: ₹{savings.toLocaleString('en-IN')}</span>
           </div>
