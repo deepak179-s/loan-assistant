@@ -168,13 +168,13 @@ export default function AiAgents() {
   return (
     <div className="animate-fade-in flex-chat" style={{ padding: '0 24px 24px' }}>
       {/* Sidebar: Chat History */}
-      <div className="glass-panel chat-sidebar">
+      <div className="card chat-sidebar">
         <div style={{ padding: '24px', borderBottom: '1px solid var(--glass-border)' }}>
           <h3 style={{ fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Clock size={20} color="var(--accent-primary)" />
+            <Clock size={20} color="var(--electric-bright)" />
             Past Histories
           </h3>
-          <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '8px' }}>
+          <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '8px' }}>
              Records for {activeUser.name}
           </p>
         </div>
@@ -183,7 +183,7 @@ export default function AiAgents() {
           <button 
             className="btn btn-secondary" 
             onClick={() => setViewingHistoryId(null)}
-            style={{ width: '100%', textAlign: 'left', display: 'flex', alignItems: 'center', gap: '8px', background: viewingHistoryId === null ? 'var(--accent-primary)' : '', color: viewingHistoryId === null ? '#fff' : '' }}
+            style={{ width: '100%', textAlign: 'left', display: 'flex', alignItems: 'center', gap: '8px', background: viewingHistoryId === null ? 'var(--electric-bright)' : '', color: viewingHistoryId === null ? '#fff' : '' }}
           >
             <MessageSquare size={16} /> Current Active Chat
           </button>
@@ -191,7 +191,7 @@ export default function AiAgents() {
           <hr style={{ border: 'none', borderTop: '1px solid var(--glass-border)', margin: '8px 0' }} />
 
           {histories.length === 0 ? (
-            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', textAlign: 'center', padding: '16px 0' }}>No past histories saved.</div>
+            <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', textAlign: 'center', padding: '16px 0' }}>No past histories saved.</div>
           ) : (
             histories.map(h => (
               <div 
@@ -202,7 +202,7 @@ export default function AiAgents() {
                   borderRadius: '8px', 
                   cursor: 'pointer',
                   border: '1px solid',
-                  borderColor: viewingHistoryId === h.id ? 'var(--accent-primary)' : 'var(--glass-border)',
+                  borderColor: viewingHistoryId === h.id ? 'var(--electric-bright)' : 'var(--glass-border)',
                   background: viewingHistoryId === h.id ? 'rgba(122, 162, 247, 0.1)' : 'transparent',
                   transition: 'all 0.2s',
                   fontSize: '0.85rem',
@@ -212,12 +212,12 @@ export default function AiAgents() {
                 }}
               >
                 <div>
-                  <div style={{ fontWeight: 600, color: 'var(--text-main)', marginBottom: '4px' }}>Session {new Date(h.date).toLocaleDateString()}</div>
-                  <div style={{ color: 'var(--text-muted)' }}>{new Date(h.date).toLocaleTimeString()}</div>
+                  <div style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px' }}>Session {new Date(h.date).toLocaleDateString()}</div>
+                  <div style={{ color: 'var(--text-secondary)' }}>{new Date(h.date).toLocaleTimeString()}</div>
                 </div>
                 <button 
                   onClick={(e) => handleDeleteHistory(e, h.id)}
-                  style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}
+                  style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '4px' }}
                   title="Delete chat"
                 >
                   <Trash2 size={16} />
@@ -229,14 +229,14 @@ export default function AiAgents() {
       </div>
       
       {/* Main Chat Area */}
-      <div className="glass-panel chat-main">
+      <div className="card chat-main">
         <div style={{ padding: '24px', borderBottom: '1px solid var(--glass-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <h3 style={{ fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{ width: 12, height: 12, borderRadius: '50%', background: 'var(--accent-primary)', boxShadow: '0 0 10px currentColor' }} />
+              <div style={{ width: 12, height: 12, borderRadius: '50%', background: 'var(--electric-bright)', boxShadow: '0 0 10px currentColor' }} />
               Debt Optimizer Agent
             </h3>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Analyzing {activeUser.name}'s Profile</span>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Analyzing {activeUser.name}'s Profile</span>
           </div>
           
           {!viewingHistoryId && (
@@ -252,7 +252,7 @@ export default function AiAgents() {
         </div>
         
         <div style={{ flex: 1, padding: '24px', overflowY: 'auto' }}>
-           <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: '24px', fontSize: '0.85rem' }}>Session Started. State synchronized via Firebase Firestore.</p>
+           <p style={{ textAlign: 'center', color: 'var(--text-secondary)', marginBottom: '24px', fontSize: '0.85rem' }}>Session Started. State synchronized via Firebase Firestore.</p>
            
            {activeMessages.map((msg) => (
              <div key={msg.id} style={{ display: 'flex', gap: '16px', marginBottom: '24px', flexDirection: msg.sender === 'user' ? 'row-reverse' : 'row' }}>
@@ -263,12 +263,12 @@ export default function AiAgents() {
                  fontWeight: 'bold', fontSize: '0.9rem', overflow: 'hidden', border: msg.sender === 'user' ? '1px solid var(--glass-border)' : 'none'
                }}>
                  {msg.sender === 'user' ? (
-                   <img src={activeUser.image} onError={(e) => { e.currentTarget.src = '/me.png' }} alt="User" style={{ width: '100%', height: '100%', objectFit: 'cover', background: 'var(--bg-panel)' }} />
+                   <img src={activeUser.image} onError={(e) => { e.currentTarget.src = '/me.png' }} alt="User" style={{ width: '100%', height: '100%', objectFit: 'cover', background: 'var(--bg-surface)' }} />
                  ) : 'AI'}
                </div>
                
                <div style={{ 
-                 background: msg.sender === 'user' ? 'rgba(122, 162, 247, 0.15)' : 'rgba(255,255,255,0.05)', 
+                 background: msg.sender === 'user' ? 'rgba(122, 162, 247, 0.15)' : 'var(--bg-raised)', 
                  padding: '16px', borderRadius: '12px', 
                  borderTopRightRadius: msg.sender === 'user' ? '0' : '12px',
                  borderTopLeftRadius: msg.sender === 'user' ? '12px' : '0', 
@@ -285,7 +285,7 @@ export default function AiAgents() {
                         <h4 style={{ color: msg.confidenceScore <= 30 ? 'red' : 'orange', margin: '0 0 8px 0', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
                           {msg.confidenceScore <= 30 ? `🚨 High Risk / Scam Detected (${msg.confidenceScore}%)` : `⚠️ Low Confidence Detected (${msg.confidenceScore}%)`}
                         </h4>
-                        <p style={{ margin: '0 0 12px 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                        <p style={{ margin: '0 0 12px 0', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
                           {msg.confidenceScore <= 30 
                             ? 'The multi-agent protocol flagged this interaction as a potential scam, fraud, or extreme mathematical impossibility.'
                             : 'The multi-agent protocol verified this response, but anomaly detection flagged it as outside strict mathematical bounds.'}
@@ -303,14 +303,14 @@ export default function AiAgents() {
             {isTyping && (
               <div style={{ display: 'flex', gap: '16px', marginBottom: '24px' }}>
                 <div style={{ width: 40, height: 40, borderRadius: '50%', flexShrink: 0, background: 'var(--glass-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem' }}>AI</div>
-                <div style={{ background: 'rgba(255,255,255,0.05)', padding: '16px', borderRadius: '12px', borderTopLeftRadius: '0', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                <div style={{ background: 'var(--bg-raised)', padding: '16px', borderRadius: '12px', borderTopLeftRadius: '0', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontStyle: 'italic' }}>
                     The Strategist and Critic agents are verifying your optimal plan...
                   </div>
                   <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent-primary)', animation: 'pulse-glow 1s infinite' }} />
-                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent-primary)', animation: 'pulse-glow 1s infinite 0.2s' }} />
-                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent-primary)', animation: 'pulse-glow 1s infinite 0.4s' }} />
+                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--electric-bright)', animation: 'pulse-glow 1s infinite' }} />
+                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--electric-bright)', animation: 'pulse-glow 1s infinite 0.2s' }} />
+                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--electric-bright)', animation: 'pulse-glow 1s infinite 0.4s' }} />
                   </div>
                 </div>
               </div>
@@ -328,7 +328,7 @@ export default function AiAgents() {
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               disabled={viewingHistoryId !== null}
-              style={{ flex: 1, background: 'rgba(0,0,0,0.3)', border: '1px solid var(--glass-border)', borderRadius: '8px', padding: '12px 16px', color: 'white', outline: 'none', fontFamily: 'inherit', opacity: viewingHistoryId ? 0.5 : 1 }} 
+              style={{ flex: 1, background: 'var(--bg-surface)', border: '1px solid var(--glass-border)', borderRadius: '8px', padding: '12px 16px', color: 'var(--text-primary)', outline: 'none', fontFamily: 'inherit', opacity: viewingHistoryId ? 0.5 : 1 }} 
             />
             <button className="btn btn-primary" onClick={handleSend} disabled={!input.trim() || isTyping || viewingHistoryId !== null} style={{ padding: '0 24px', opacity: (!input.trim() || isTyping || viewingHistoryId) ? 0.5 : 1 }}>
               Send Request
