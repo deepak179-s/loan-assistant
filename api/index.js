@@ -167,7 +167,7 @@ ${profileContext}`;
 
     const strategistResponse = await groq.chat.completions.create({
       messages: history1,
-      model: "llama-3.3-70b-versatile",
+      model: "gpt-oss-120b",
     });
 
     const strategistDraft = strategistResponse.choices[0]?.message?.content || "";
@@ -198,7 +198,7 @@ ${profileContext}`;
 
     const criticResponse = await groq.chat.completions.create({
       messages: criticHistory,
-      model: "llama-3.3-70b-versatile",
+      model: "gpt-oss-120b",
       response_format: { type: "json_object" }
     });
 
