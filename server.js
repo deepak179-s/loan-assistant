@@ -11,7 +11,10 @@ const __dirname = path.dirname(__filename);
 
 dotenv.config();
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+const groq = new Groq({ 
+  apiKey: process.env.OPENROUTER_API_KEY || process.env.GROQ_API_KEY,
+  baseURL: "https://openrouter.ai/api/v1"
+});
 
 const app = express();
 const PORT = process.env.PORT || 3001;
