@@ -1,132 +1,409 @@
 import { Link } from 'react-router-dom';
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import {
+  AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell
+} from 'recharts';
+import {
+  TrendingDown, ArrowRight, Zap, Shield,
+  CreditCard, Activity, Target, AlertTriangle
+} from 'lucide-react';
 import { useUser } from '../context/UserContext';
 
-export default function Dashboard() {
-  const { creditProfile, profileLoading } = useUser();
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div style={{
+        background: 'var(--bg-raised)',
+        border: '1px solid var(--glass-border-bright)',
+        borderRadius: 'var(--radius-md)',
+        padding: '10px 14px',
+        fontSize: '0.82rem',
+        boxShadow: 'var(--glass-shadow)'
+      }}>
+        <div style={{ color: 'var(--text-tertiary)', marginBottom: 4, fontFamily: 'var(--font-mono)', fontSize: '0.7rem' }}>{label}</div>
+        <div style={{ color: 'var(--electric-bright)', fontWeight: 600, fontFamily: 'var(--font-mono)' }}>
+          ₹{Number(payload[0].value).toLocaleString('en-IN')}
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
 
-  const totalPrincipal = creditProfile?.active_loans?.reduce((sum: number, l: any) => sum + l.outstanding_balance, 0) || 0;
-  const totalEmi = creditProfile?.active_loans?.reduce((sum: number, l: any) => sum + l.emi, 0) || 0;
+export default function Dashboard() {
+  const { creditProfile, profileLoading, activeUser } = useUser();
+
+  const totalPrincipal = creditProfile?.active_loans?.reduce(
+    (sum: number, l: any) => sum + l.outstanding_balance, 0
+  ) || 0;
+  const totalEmi = creditProfile?.active_loans?.reduce(
+    (sum: number, l: any) => sum + l.emi, 0
+  ) || 0;
   const cibil = creditProfile?.cibil_score || 0;
-  
-  const avgInterest = totalPrincipal > 0 
-    ? (creditProfile?.active_loans?.reduce((sum: number, l: any) => sum + (l.interest_rate * l.outstanding_balance), 0) / totalPrincipal) || 8.5
+  const avgInterest = totalPrincipal > 0
+    ? (creditProfile?.active_loans?.reduce(
+      (sum: number, l: any) => sum + (l.interest_rate * l.outstanding_balance), 0
+    ) / totalPrincipal) || 8.5
     : 8.5;
 
   const generateChartData = () => {
-    const data = [];
+    const data: any[] = [];
     let principal = totalPrincipal;
-    const totalPayment = totalEmi;
     const interestRate = (avgInterest / 100) / 12;
-    
-    if (principal === 0 || totalPayment === 0) return [];
-    
     let year = new Date().getFullYear();
     while (principal > 0 && year <= 2045) {
       data.push({ name: year.toString(), Balance: Math.max(0, Math.round(principal)) });
-      principal = principal - (totalPayment * 12) + (principal * interestRate * 12);
+      principal = principal - (totalEmi * 12) + (principal * interestRate * 12);
       year++;
     }
     return data;
   };
-  
+
   const chartData = generateChartData();
-  const payoffYear = chartData.length > 0 ? chartData[chartData.length - 1].name : 'Paid Off';
+  const payoffYear = chartData.length > 0 ? chartData[chartData.length - 1].name : 'N/A';
+
+  const cibilScore = cibil;
+  const cibilColor = cibilScore >= 750 ? 'var(--emerald-bright)' : cibilScore >= 650 ? 'var(--gold-bright)' : 'var(--rose-bright)';
+  const cibilBg = cibilScore >= 750 ? 'var(--emerald-glow)' : cibilScore >= 650 ? 'var(--gold-glow)' : 'var(--rose-glow)';
+  const cibilLabel = cibilScore >= 750 ? 'Excellent' : cibilScore >= 650 ? 'Fair' : 'Needs Work';
+
+  // Pie data for debt distribution
+  const pieData = creditProfile?.active_loans?.map((l: any) => ({
+    name: l.lender,
+    value: l.outstanding_balance
+  })) || [];
+  const PIE_COLORS = ['var(--electric)', 'var(--gold)', 'var(--cyan)', 'var(--emerald)'];
 
   if (profileLoading) {
-    return <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>Loading AI Financial Overview...</div>;
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+        <div className="page-header">
+          <div className="skeleton" style={{ height: 32, width: 260, marginBottom: 8 }} />
+          <div className="skeleton" style={{ height: 18, width: 380 }} />
+        </div>
+        <div className="grid-4">
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className="stat-card">
+              <div className="skeleton" style={{ height: 14, width: 100, marginBottom: 12 }} />
+              <div className="skeleton" style={{ height: 40, width: 160, marginBottom: 8 }} />
+              <div className="skeleton" style={{ height: 14, width: 120 }} />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div>
-      <h1 className="text-gradient">Financial Overview</h1>
-      <p style={{ color: 'var(--text-muted)', marginBottom: '32px', fontSize: '1.1rem' }}>
-        AI-powered insights based on your real-time CIBIL profile and macroeconomic risk factors.
-      </p>
-      
-      {/* Top Value Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '24px', marginBottom: '32px' }}>
-        <div className="glass-panel" style={{ padding: '24px' }}>
-          <h4 style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '8px' }}>Total Outstanding Debt</h4>
-          <h2 style={{ fontSize: '2.5rem', marginBottom: '8px' }}>₹{totalPrincipal.toLocaleString('en-IN')}</h2>
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', fontSize: '0.85rem' }}>
-            <span style={{ color: 'var(--danger)', background: 'rgba(247, 118, 142, 0.1)', padding: '2px 8px', borderRadius: '12px' }}>{avgInterest.toFixed(1)}% APY</span>
-            <span style={{ color: 'var(--text-muted)' }}>Avg Interest</span>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
+
+      {/* ── Header ── */}
+      <div className="page-header animate-fade-up">
+        <h1>
+          Good {new Date().getHours() < 12 ? 'Morning' : new Date().getHours() < 17 ? 'Afternoon' : 'Evening'},&nbsp;
+          {activeUser.name.split(' ')[0]} 👋
+        </h1>
+        <p>AI-powered insights synced from your live CIBIL profile · Last updated just now</p>
+      </div>
+
+      {/* ── Stats Row ── */}
+      <div className="grid-4">
+        {/* Total Debt */}
+        <div className="stat-card card-glow-rose animate-fade-up animate-fade-up-delay-1">
+          <div
+            className="stat-card-bg"
+            style={{ background: 'var(--rose)' }}
+          />
+          <div className="stat-label">
+            <TrendingDown size={13} /> Total Debt
+          </div>
+          <div className="stat-value rose">
+            ₹{(totalPrincipal / 100000).toFixed(1)}L
+          </div>
+          <div className="stat-meta">
+            <span className="stat-tag down">{avgInterest.toFixed(1)}% avg APR</span>
           </div>
         </div>
-        
-        <div className="glass-panel" style={{ padding: '24px' }}>
-          <h4 style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '8px' }}>Projected Payoff Date</h4>
-          <h2 style={{ fontSize: '2.5rem', marginBottom: '8px' }}>Oct {payoffYear}</h2>
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', fontSize: '0.85rem' }}>
-            <span style={{ color: 'var(--success)', background: 'rgba(158, 206, 106, 0.1)', padding: '2px 8px', borderRadius: '12px' }}>Optimized</span>
-            <span style={{ color: 'var(--text-muted)' }}>vs Standard Plan</span>
+
+        {/* Monthly EMI */}
+        <div className="stat-card card-glow-gold animate-fade-up animate-fade-up-delay-2">
+          <div className="stat-card-bg" style={{ background: 'var(--gold)' }} />
+          <div className="stat-label">
+            <Activity size={13} /> Monthly EMI
+          </div>
+          <div className="stat-value gold">
+            ₹{totalEmi.toLocaleString('en-IN')}
+          </div>
+          <div className="stat-meta">
+            <span className="stat-tag neutral">{creditProfile?.active_loans?.length || 0} loans</span>
           </div>
         </div>
-        
-        <div className="glass-panel" style={{ padding: '24px' }}>
-          <h4 style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '8px' }}>CIBIL / Risk Score</h4>
-          <h2 className="text-gradient-alt" style={{ fontSize: '2.5rem', marginBottom: '8px' }}>
-            {cibil} {cibil > 750 ? '(Excellent)' : cibil > 650 ? '(Fair)' : '(Low)'}
-          </h2>
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', fontSize: '0.85rem' }}>
-            <span style={{ color: 'var(--text-muted)' }}>Powered by AI Ensembles</span>
-            <Link to="/simulator" style={{ color: 'var(--accent-primary)', textDecoration: 'none' }}>Analysis</Link>
+
+        {/* Payoff Year */}
+        <div className="stat-card card-glow-electric animate-fade-up animate-fade-up-delay-3">
+          <div className="stat-card-bg" style={{ background: 'var(--electric)' }} />
+          <div className="stat-label">
+            <Target size={13} /> Debt Free By
+          </div>
+          <div className="stat-value electric">{payoffYear}</div>
+          <div className="stat-meta">
+            <span className="stat-tag up">Optimized path</span>
+          </div>
+        </div>
+
+        {/* CIBIL Score */}
+        <div className="stat-card card-glow-emerald animate-fade-up animate-fade-up-delay-4">
+          <div className="stat-card-bg" style={{ background: 'var(--emerald)' }} />
+          <div className="stat-label">
+            <Shield size={13} /> CIBIL Score
+          </div>
+          <div className="stat-value" style={{ color: cibilColor }}>
+            {cibil || '—'}
+          </div>
+          <div className="stat-meta">
+            <span
+              className="stat-tag"
+              style={{
+                background: cibilBg,
+                color: cibilColor,
+                border: `1px solid ${cibilColor}33`
+              }}
+            >
+              {cibilLabel}
+            </span>
           </div>
         </div>
       </div>
-      
+
+      {/* ── Charts Row ── */}
       <div className="grid-2">
-        <div className="glass-panel" style={{ padding: '24px', minHeight: '400px', display: 'flex', flexDirection: 'column' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-            <h3 style={{ fontSize: '1.2rem' }}>Repayment Trajectory (Predictive)</h3>
-            <Link to="/simulator" className="btn btn-secondary" style={{ fontSize: '0.8rem', padding: '6px 12px', textDecoration: 'none' }}>Run Simulation</Link>
+
+        {/* Repayment Trajectory */}
+        <div className="card card-pad animate-fade-up animate-fade-up-delay-2">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+            <div className="section-title" style={{ marginBottom: 0 }}>
+              <div
+                className="section-title-icon"
+                style={{ background: 'var(--electric-subtle)' }}
+              >
+                <TrendingDown size={14} color="var(--electric-bright)" />
+              </div>
+              Debt Trajectory
+            </div>
+            <Link to="/simulator" className="btn btn-secondary btn-sm">
+              Simulate <ArrowRight size={13} />
+            </Link>
           </div>
-          <div style={{ flex: 1, width: '100%', minHeight: '300px', marginTop: '16px' }}>
+
+          <div style={{ height: 220, width: '100%' }}>
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+              <AreaChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
                 <defs>
-                  <linearGradient id="colorBalance" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="var(--accent-primary)" stopOpacity={0.8}/>
-                    <stop offset="95%" stopColor="var(--accent-primary)" stopOpacity={0}/>
+                  <linearGradient id="debtGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="var(--electric)" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="var(--electric)" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <XAxis dataKey="name" stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `₹${(value/100000).toFixed(0)}L`} />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: 'var(--bg-panel)', border: '1px solid var(--glass-border)', borderRadius: '8px' }}
-                  itemStyle={{ color: 'var(--accent-primary)' }}
-                  formatter={(value: any) => `₹${Number(value).toLocaleString('en-IN')}`}
+                <XAxis
+                  dataKey="name"
+                  stroke="var(--text-tertiary)"
+                  fontSize={10}
+                  tickLine={false}
+                  axisLine={false}
+                  fontFamily="var(--font-mono)"
                 />
-                <Area type="monotone" dataKey="Balance" stroke="var(--accent-primary)" strokeWidth={3} fillOpacity={1} fill="url(#colorBalance)" />
+                <YAxis
+                  stroke="var(--text-tertiary)"
+                  fontSize={10}
+                  tickLine={false}
+                  axisLine={false}
+                  tickFormatter={(v) => `₹${(v / 100000).toFixed(0)}L`}
+                  fontFamily="var(--font-mono)"
+                />
+                <Tooltip content={<CustomTooltip />} />
+                <Area
+                  type="monotone"
+                  dataKey="Balance"
+                  stroke="var(--electric-bright)"
+                  strokeWidth={2}
+                  fill="url(#debtGrad)"
+                  dot={false}
+                  activeDot={{ r: 5, fill: 'var(--electric-bright)', strokeWidth: 0 }}
+                />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
-        
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          <div className="glass-panel" style={{ padding: '24px' }}>
-            <h3 style={{ fontSize: '1.2rem', marginBottom: '16px' }}>AI Recommended Actions</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div style={{ background: 'rgba(187, 154, 247, 0.1)', borderLeft: '4px solid var(--accent-tertiary)', padding: '16px', borderRadius: '0 8px 8px 0' }}>
-                <strong style={{ display: 'block', marginBottom: '4px' }}>Claim Section 80E Rebate</strong>
-                <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '12px' }}>Save approximately ₹45,000 in your 30% tax slab by filing your ITR with the bank's interest certificate.</p>
-                <div style={{ display: 'flex', gap: '12px' }}>
-                  <Link to="/restructuring" className="btn btn-primary" style={{ padding: '6px 12px', fontSize: '0.8rem', textDecoration: 'none' }}>Review Options</Link>
+
+        {/* Right Column */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+          {/* Debt Distribution Pie */}
+          {pieData.length > 0 && (
+            <div className="card card-pad animate-fade-up animate-fade-up-delay-3">
+              <div className="section-title">
+                <div className="section-title-icon" style={{ background: 'var(--gold-subtle)' }}>
+                  <CreditCard size={14} color="var(--gold-bright)" />
+                </div>
+                Debt Distribution
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+                <div style={{ width: 100, height: 100, flexShrink: 0 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={pieData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={30}
+                        outerRadius={46}
+                        strokeWidth={0}
+                        dataKey="value"
+                      >
+                        {pieData.map((_: any, index: number) => (
+                          <Cell key={index} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                        ))}
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {pieData.map((item: any, idx: number) => (
+                    <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{
+                        width: 8, height: 8, borderRadius: '50%',
+                        background: PIE_COLORS[idx % PIE_COLORS.length],
+                        flexShrink: 0
+                      }} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{
+                          fontSize: '0.75rem', color: 'var(--text-secondary)',
+                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
+                        }}>
+                          {item.name.replace(' Loan', '').replace(' Personal', '')}
+                        </div>
+                      </div>
+                      <div style={{
+                        fontSize: '0.72rem', color: 'var(--text-tertiary)',
+                        fontFamily: 'var(--font-mono)', flexShrink: 0
+                      }}>
+                        ₹{(item.value / 100000).toFixed(1)}L
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
-          </div>
-          
-          <div className="glass-panel" style={{ padding: '24px', background: 'var(--gradient-primary)', color: 'white' }}>
-            <h3 style={{ fontSize: '1.2rem', marginBottom: '16px' }}>Need Guidance?</h3>
-            <p style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.9)', marginBottom: '16px' }}>
-              Our specialized AI agents can help you optimize education loans, plan Mutual Funds, and strategize PPF.
+          )}
+
+          {/* AI Action Card */}
+          <div className="card animate-fade-up animate-fade-up-delay-4" style={{
+            padding: 24,
+            background: 'var(--electric-glow)',
+            borderColor: 'var(--electric)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+              <Zap size={16} color="var(--electric-bright)" />
+              <span style={{
+                fontSize: '0.82rem', fontWeight: 600,
+                color: 'var(--electric-bright)',
+                fontFamily: 'var(--font-mono)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.06em'
+              }}>
+                AI Recommendation
+              </span>
+            </div>
+            <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: 16, lineHeight: 1.6 }}>
+              Claim <strong style={{ color: 'var(--gold-bright)' }}>Section 80E</strong> tax deduction — estimated savings of ₹45,000 in your 30% slab.
             </p>
-            <Link to="/agents" className="btn" style={{ width: '100%', background: 'white', color: 'var(--accent-primary)', fontWeight: 'bold', border: 'none' }}>Consult Multi-Agent Team</Link>
+            <Link to="/agents" className="btn btn-primary btn-sm">
+              Ask AI Agent <ArrowRight size={13} />
+            </Link>
           </div>
+
+          {/* Alert */}
+          {cibil < 750 && cibil > 0 && (
+            <div className="alert alert-warning animate-fade-up animate-fade-up-delay-4">
+              <AlertTriangle size={16} className="alert-icon" />
+              <div>
+                <div style={{ fontWeight: 600, color: 'var(--gold-bright)', marginBottom: 4, fontSize: '0.82rem' }}>
+                  Score Improvement Available
+                </div>
+                <div style={{ fontSize: '0.8rem' }}>
+                  Keep credit utilization below 30% to boost score within 45 days.
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* ── Active Loans Quick View ── */}
+      {creditProfile?.active_loans && creditProfile.active_loans.length > 0 && (
+        <div className="card card-pad animate-fade-up animate-fade-up-delay-3">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+            <div className="section-title" style={{ marginBottom: 0 }}>
+              <div className="section-title-icon" style={{ background: 'var(--electric-subtle)' }}>
+                <Activity size={14} color="var(--electric-bright)" />
+              </div>
+              Active Loans Snapshot
+            </div>
+            <Link to="/credit" className="btn btn-ghost btn-sm">
+              Full Profile <ArrowRight size={13} />
+            </Link>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {creditProfile.active_loans.map((loan: any, i: number) => {
+              const pct = loan.percent_repaid;
+              const colors = ['var(--electric)', 'var(--gold)', 'var(--cyan)'];
+              const color = colors[i % colors.length];
+              return (
+                <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 12, alignItems: 'center' }}>
+                  <div>
+                    <div style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      marginBottom: 6
+                    }}>
+                      <span style={{ fontSize: '0.82rem', fontWeight: 500, color: 'var(--text-primary)' }}>
+                        {loan.lender}
+                      </span>
+                      <span style={{
+                        fontSize: '0.72rem', color: 'var(--text-tertiary)',
+                        fontFamily: 'var(--font-mono)'
+                      }}>
+                        {pct}% paid
+                      </span>
+                    </div>
+                    <div className="progress-track">
+                      <div
+                        className="progress-fill"
+                        style={{
+                          width: `${pct}%`,
+                          background: `linear-gradient(90deg, ${color}88, ${color})`
+                        }}
+                      />
+                    </div>
+                  </div>
+                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                    <div style={{
+                      fontSize: '0.9rem', fontWeight: 700, fontFamily: 'var(--font-display)',
+                      color: loan.interest_rate > 10 ? 'var(--rose-bright)' : 'var(--text-primary)',
+                      letterSpacing: '-0.02em'
+                    }}>
+                      ₹{(loan.outstanding_balance / 100000).toFixed(1)}L
+                    </div>
+                    <div style={{ fontSize: '0.68rem', color: 'var(--text-tertiary)', fontFamily: 'var(--font-mono)' }}>
+                      {loan.interest_rate}% p.a.
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
