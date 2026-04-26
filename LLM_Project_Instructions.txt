@@ -1,0 +1,38 @@
+# LOAN ASSISTANT: LLM PROJECT INSTRUCTIONS & CONTEXT
+
+You are operating within the "Loan Assistant" repository. This is an advanced AI-powered Financial Debt Optimizer platform. When generating code, answering questions, or restructuring files in this project, you MUST adhere strictly to the following architectural constraints and style guidelines.
+
+## 1. PROJECT ARCHITECTURE & TECH STACK
+- Frontend: React.js (Vite compiler), CSS/Glassmorphism design, Lucide-React for icons, Recharts for CIBIL visualizations.
+- Backend (Local): Node.js with Express (`server.js`).
+- Backend (Production): Vercel Serverless Functions (`api/index.js`).
+- Database: Firebase Firestore (for NoSQL user profile storage and chat history).
+- AI Engine: Groq API utilizing `llama-3.3-70b-versatile`.
+
+## 2. THE MULTI-AGENT SYSTEM (CORE LOGIC)
+- The application uses a strictly controlled Dual-Agent Debating System. 
+- "Strategist Agent": Proposes debt strategies based on injected JSON contexts.
+- "Critic Agent": Audits the Strategist. If it detects impossible math or consumer fraud/scams, it outputs a `confidenceScore` of <= 30.
+- When modifying AI endpoints (`server.js` or `api/index.js`), DO NOT alter the `confidenceScore` threshold logic or the Critic's JSON schema constraints. These are critical for the UI Scam Interception module.
+
+## 3. RULE: DETERMINISTIC MATH VS. LLM MATH
+- LLMs are NOT allowed to perform exact amortized loan calculations (e.g., total interest saved over 15 years) in this project.
+- If you are asked to implement financial math, you MUST build the calculation natively in the React Frontend using standard JavaScript math objects. 
+- Do not modify the LLM system prompts to "calculate exact savings." The AI's role is purely strategic reasoning.
+
+## 4. UI/UX DESIGN GUIDELINES
+- The UI follows a strict dark-mode Glassmorphism aesthetic.
+- Do NOT introduce massive generic UI frameworks like Bootstrap.
+- Components must handle conditional rendering based on AI Confidence Scores (e.g., The Red "🚨 High Risk / Scam Detected" UI module).
+- All icons must be imported from `lucide-react`.
+- Charts must be built using `recharts`.
+
+## 5. ENVIRONMENT VARIABLES
+- The project relies on `VITE_FIREBASE_API_KEY`, etc., for the frontend.
+- The backend relies on `GROQ_API_KEY`.
+- Never hardcode these variables in your generated code.
+
+## 6. LORA DATASET PIPELINE
+- The backend contains a `logToLoRADataset` function.
+- Every successful, safe LLM interaction (Confidence >= 80) is written locally to `lora-training-data.jsonl`.
+- If modifying chat endpoints, ensure this JSONL writing pipeline remains intact so the project continues to automatically generate proprietary training data.
